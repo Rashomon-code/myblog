@@ -1,4 +1,4 @@
-module myblog
+module github.com/Rashomon-code/myblog
 
 go 1.25.0
 

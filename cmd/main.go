@@ -2,7 +2,8 @@ package main
 
 import (
 	"log"
-	"myblog/repository"
+
+	"github.com/Rashomon-code/myblog/internal/repository"
 )
 
 func main() {
