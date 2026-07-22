@@ -52,6 +52,5 @@ Go言語でのWebアプリケーション開発の実践、およびデータベ
 
 ### 1. リポジトリのクローンと移動
 ```bash
-git clone <あなたのGitHubリポジトリURL>
-cd myblog
-```
+git clone https://github.com/Rashomon-code/MyBlog.git
+cd MyBlog
