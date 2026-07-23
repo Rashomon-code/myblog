@@ -4,78 +4,43 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
 
 type UserRepository struct {
 	db *sql.DB
-}
-
-type AuthController struct {
-	userRepo UserRepository
-}
-
-func (r *UserRepository) Register(username, password string) error {
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 4)
-	if err != nil {
-		return fmt.Errorf("登録できませんでした: %w", err)
-	}
-
-	insertSQL := `
-		INSERT INTO users (username, password_hash)
-		VALUES (?, ?)
-	`
-
-	_, err = r.db.Exec(insertSQL, username, string(passwordHash))
-	if err != nil {
-		return fmt.Errorf("登録できませんでした: %w", err)
-	}
-
-	fmt.Println(username, "登録しました。")
-	return nil
 }
 
 func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Login(username, password string) (bool, error) {
-	loginSQL := `
-		SELECT password_hash FROM users WHERE username = ?
-	`
+func (r *UserRepository) GetPasswordHash(username string) (string, error) {
+	selectSQL := `SELECT password_hash FROM users WHERE username = ?`
+
 	var passwordHash string
 
-	row := r.db.QueryRow(loginSQL, username)
+	row := r.db.QueryRow(selectSQL, username)
 	err := row.Scan(&passwordHash)
 	if err != nil {
-
 		if err == sql.ErrNoRows {
-			return false, errors.New("入力に誤りがございます。")
+			return "", errors.New("入力に誤りがございます。")
 		}
 
-		return false, fmt.Errorf("サーバーに問題が起きました: %w", err)
+		return "", fmt.Errorf("予期せぬエラーが起きました: %w", err)
 	}
-
-	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
-		return false, errors.New("入力に誤りがございます。")
-	}
-
-	return true, nil
+	return passwordHash, nil
 }
 
-func (ctrl *AuthController) HandleRegister(c *gin.Context) {
-	var req LoginRequest
-	err := c.ShouldBindJSON(&req)
+func (r *UserRepository) CreateUser(username, passwordHash string) error {
+	insertSQL := `
+		INSERT INTO users (username, password_hash)
+		VALUES (?, ?)
+	`
+
+	_, err := r.db.Exec(insertSQL, username, passwordHash)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
+		return fmt.Errorf("登録にエラーが起きました: %w", err)
 	}
-	c.JSON(200, gin.H{"message": "Success"})
+	fmt.Println("登録完了しました。")
+	return nil
 }
