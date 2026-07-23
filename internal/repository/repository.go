@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -44,11 +45,16 @@ func (r *UserRepository) Login(username, password string) (bool, error) {
 	row := r.db.QueryRow(loginSQL, username)
 	err := row.Scan(&passwordHash)
 	if err != nil {
+
+		if err == sql.ErrNoRows {
+			return false, errors.New("輸入有誤")
+		}
+
 		return false, fmt.Errorf("服務器錯誤，請稍後再試: %w", err)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
-		return false, err
+		return false, errors.New("輸入有誤")
 	}
 
 	return true, nil
