@@ -10,13 +10,13 @@ import (
 func InitSQL() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", "./blog.db")
 	if err != nil {
-		return nil, fmt.Errorf("打開數據庫失敗: %w", err)
+		return nil, fmt.Errorf("データベースを開く際にエラーが発生しました: %w", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("無法連接到數據庫: %w", err)
+		return nil, fmt.Errorf("データベースの接続に問題が起きました: %w", err)
 	}
-	fmt.Println("已連接 SQLite")
+	fmt.Println("SQLite に接続済み")
 
 	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS users(
@@ -36,9 +36,9 @@ func InitSQL() (*sql.DB, error) {
 
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
-		return nil, fmt.Errorf("創建表失敗: %w", err)
+		return nil, fmt.Errorf("テーブルが作成できませんでした: %w", err)
 	}
-	fmt.Println("表已創建")
+	fmt.Println("テーブルを作成済み。")
 
 	return db, nil
 }

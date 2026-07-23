@@ -5,17 +5,27 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 type UserRepository struct {
 	db *sql.DB
 }
 
+type AuthController struct {
+	userRepo UserRepository
+}
+
 func (r *UserRepository) Register(username, password string) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 4)
 	if err != nil {
-		return fmt.Errorf("創建失敗: %w", err)
+		return fmt.Errorf("登録できませんでした: %w", err)
 	}
 
 	insertSQL := `
@@ -25,10 +35,10 @@ func (r *UserRepository) Register(username, password string) error {
 
 	_, err = r.db.Exec(insertSQL, username, string(passwordHash))
 	if err != nil {
-		return fmt.Errorf("創建失敗: %w", err)
+		return fmt.Errorf("登録できませんでした: %w", err)
 	}
 
-	fmt.Println(username, "創建成功")
+	fmt.Println(username, "登録しました。")
 	return nil
 }
 
@@ -38,7 +48,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) Login(username, password string) (bool, error) {
 	loginSQL := `
-		SELECT password_hash FROM user WHERE username = ?
+		SELECT password_hash FROM users WHERE username = ?
 	`
 	var passwordHash string
 
@@ -47,15 +57,25 @@ func (r *UserRepository) Login(username, password string) (bool, error) {
 	if err != nil {
 
 		if err == sql.ErrNoRows {
-			return false, errors.New("輸入有誤")
+			return false, errors.New("入力に誤りがございます。")
 		}
 
-		return false, fmt.Errorf("服務器錯誤，請稍後再試: %w", err)
+		return false, fmt.Errorf("サーバーに問題が起きました: %w", err)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
-		return false, errors.New("輸入有誤")
+		return false, errors.New("入力に誤りがございます。")
 	}
 
 	return true, nil
+}
+
+func (ctrl *AuthController) HandleRegister(c *gin.Context) {
+	var req LoginRequest
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Success"})
 }
