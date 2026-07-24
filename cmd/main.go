@@ -22,6 +22,9 @@ func main() {
 
 	r := gin.Default()
 
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.File("index.html")
+	})
 	r.POST("/register", authHandle.RegisterAPI)
 
 	r.Run(":8080")
