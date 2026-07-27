@@ -26,9 +26,27 @@ func (a *AuthHandle) RegisterAPI(c *gin.Context) {
 
 	err := a.authService.Register(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "登録しました"})
+}
+
+func (a *AuthHandle) LoginAPI(c *gin.Context) {
+	var req model.LoginRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
+		return
+	}
+
+	err := a.authService.Login(req.Username, req.Password)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "ログインしました"})
 }

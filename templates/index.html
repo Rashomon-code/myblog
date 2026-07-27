@@ -1,0 +1,135 @@
+
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Blog</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: "Yu Gothic", sans-serif;
+        }
+
+        body{
+            background:#f5f5f5;
+        }
+
+        header{
+            background:white;
+            height:70px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:0 60px;
+            box-shadow:0 2px 10px rgba(0,0,0,.1);
+        }
+
+        .logo{
+            font-size:28px;
+            font-weight:bold;
+            color:#333;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .register-btn{
+            background:#4CAF50;
+            color:white;
+            border:none;
+            padding:12px 28px;
+            border-radius:8px;
+            font-size:16px;
+            cursor:pointer;
+            transition:.3s;
+        }
+
+        .register-btn:hover{
+            background:#45a049;
+        }
+
+        .login-btn{
+            background:#2196F3;
+            color:white;
+            border:none;
+            padding:12px 28px;
+            border-radius:8px;
+            font-size:16px;
+            cursor:pointer;
+            transition:.3s;
+        }
+
+        .login-btn:hover{
+            background:#1e87f0;
+        }
+
+        main{
+            height:calc(100vh - 70px);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-direction:column;
+        }
+
+        h1{
+            font-size:50px;
+            color:#333;
+        }
+
+        p{
+            margin-top:20px;
+            color:#777;
+            font-size:20px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        My Blog
+    </div>
+
+    <div class="header-buttons">
+        <button class="login-btn" onclick="goLogin()">
+            ログイン
+        </button>
+        <button class="register-btn" onclick="goRegister()">
+            ユーザー登録
+        </button>
+    </div>
+
+</header>
+
+<main>
+
+    <h1>ようこそ！</h1>
+
+    <p>
+        シンプルなブログへようこそ。
+    </p>
+
+</main>
+
+<script>
+
+function goRegister(){
+    window.location.href = "/register";
+}
+
+function goLogin(){
+    window.location.href = "/login";
+}
+
+</script>
+
+</body>
+</html>

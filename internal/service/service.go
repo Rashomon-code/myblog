@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Rashomon-code/myblog/internal/repository"
@@ -23,4 +24,17 @@ func (s *AuthService) Register(username, password string) error {
 
 	err = s.repo.CreateUser(username, string(passwordHash))
 	return err
+}
+
+func (s *AuthService) Login(username, password string) error {
+	passwordHash, err := s.repo.GetPasswordHash(username)
+	if err != nil {
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	if err != nil {
+		return errors.New("入力に誤りがございます。")
+	}
+	return nil
 }

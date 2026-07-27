@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+
+<body>
+
+<h1>ユーザー登録</h1>
+
+<form id="registerForm">
+
+    <div>
+        <label>ユーザー名</label><br>
+        <input type="text" id="username">
+    </div>
+
+    <br>
+
+    <div>
+        <label>パスワード</label><br>
+        <input type="password" id="password">
+    </div>
+
+    <br>
+
+    <button type="submit">
+        登録
+    </button>
+
+</form>
+
+<script>
+
+document.getElementById("registerForm").addEventListener("submit", async function(e){
+
+    e.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    const response = await fetch("/register",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            username:username,
+            password:password
+        })
+    });
+
+    const result = await response.json();
+
+    alert(result.message);
+
+});
+</script>
+
+</body>
+</html>
