@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/Rashomon-code/myblog/internal/handle"
 	"github.com/Rashomon-code/myblog/internal/repository"
@@ -10,14 +11,17 @@ import (
 )
 
 func main() {
+	secret := os.Getenv("JWT_SECRET")
+
 	db, err := repository.InitSQL()
 	if err != nil {
 		log.Fatalln("データベース初始化失敗:", err)
 	}
 	defer db.Close()
 
+	jwtService := service.NewJWTService(secret)
 	userRepo := repository.NewUserRepository(db)
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo, jwtService)
 	authHandle := handle.NewAuthHandle(authService)
 
 	r := gin.Default()
@@ -25,6 +29,7 @@ func main() {
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.File("templates/index.html")
 	})
+
 	r.GET("/register", func(ctx *gin.Context) {
 		ctx.File("templates/register.html")
 	})

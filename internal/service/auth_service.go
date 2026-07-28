@@ -10,10 +10,11 @@ import (
 
 type AuthService struct {
 	repo *repository.UserRepository
+	jwt  *JWTService
 }
 
-func NewAuthService(repo *repository.UserRepository) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthService(repo *repository.UserRepository, jwt *JWTService) *AuthService {
+	return &AuthService{repo: repo, jwt: jwt}
 }
 
 func (s *AuthService) Register(username, password string) error {
@@ -26,15 +27,20 @@ func (s *AuthService) Register(username, password string) error {
 	return err
 }
 
-func (s *AuthService) Login(username, password string) error {
+func (s *AuthService) Login(username, password string) (string, error) {
 	passwordHash, err := s.repo.GetPasswordHash(username)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 	if err != nil {
-		return errors.New("入力に誤りがございます。")
+		return "", errors.New("入力に誤りがございます。")
 	}
-	return nil
+
+	token, err := s.jwt.GenerateToken(username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

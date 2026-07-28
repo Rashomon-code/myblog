@@ -41,12 +41,12 @@ func (a *AuthHandle) LoginAPI(c *gin.Context) {
 		return
 	}
 
-	err := a.authService.Login(req.Username, req.Password)
+	token, err := a.authService.Login(req.Username, req.Password)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"エラー": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ログインしました"})
+	c.JSON(http.StatusOK, gin.H{"message": "ログインしました", "token": token})
 }

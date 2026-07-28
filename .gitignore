@@ -15,3 +15,5 @@
 *.njsproj
 *.sln
 *.swp
+
+.env
