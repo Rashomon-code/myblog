@@ -15,7 +15,7 @@ func main() {
 
 	db, err := repository.InitSQL()
 	if err != nil {
-		log.Fatalln("データベース初始化失敗:", err)
+		log.Fatalln("データベース初期化失敗:", err)
 	}
 	defer db.Close()
 
