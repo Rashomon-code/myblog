@@ -3,59 +3,198 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Register</title>
+    <title>My Blog - ユーザー登録</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: "Yu Gothic", sans-serif;
+        }
+
+        body{
+            background:#f5f5f5;
+        }
+
+        header{
+            background:white;
+            height:70px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:0 60px;
+            box-shadow:0 2px 10px rgba(0,0,0,.1);
+        }
+
+        .logo{
+            font-size:28px;
+            font-weight:bold;
+            color:#333;
+            cursor:pointer;
+        }
+
+        main{
+            height:calc(100vh - 70px);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+
+        .register-card{
+            background:white;
+            padding:40px;
+            border-radius:12px;
+            box-shadow:0 4px 20px rgba(0,0,0,.08);
+            width:100%;
+            max-width:400px;
+        }
+
+        h1{
+            font-size:28px;
+            color:#333;
+            margin-bottom:24px;
+            text-align:center;
+        }
+
+        .form-group{
+            margin-bottom:20px;
+        }
+
+        label{
+            display:block;
+            margin-bottom:8px;
+            color:#555;
+            font-size:14px;
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            border:1px solid #ddd;
+            border-radius:6px;
+            font-size:16px;
+            outline:none;
+            transition:.3s;
+        }
+
+        input:focus{
+            border-color:#2196F3;
+            box-shadow:0 0 0 3px rgba(33,150,243,0.1);
+        }
+
+        .submit-btn{
+            width:100%;
+            background:#4CAF50;
+            color:white;
+            border:none;
+            padding:12px;
+            border-radius:6px;
+            font-size:16px;
+            cursor:pointer;
+            transition:.3s;
+            margin-top:10px;
+        }
+
+        .submit-btn:hover{
+            background:#45a049;
+        }
+
+        .login-link-container {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .login-link {
+            color: #2196F3;
+            text-decoration: none;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
+    </style>
 </head>
 
 <body>
 
-<h1>ユーザー登録</h1>
-
-<form id="registerForm">
-
-    <div>
-        <label>ユーザー名</label><br>
-        <input type="text" id="username">
+<header>
+    <div class="logo" onclick="goHome()">
+        My Blog
     </div>
+</header>
 
-    <br>
+<main>
+    <div class="register-card">
+        <h1>ユーザー登録</h1>
 
-    <div>
-        <label>パスワード</label><br>
-        <input type="password" id="password">
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">ユーザー名</label>
+                <input type="text" id="username" placeholder="ユーザー名を入力">
+            </div>
+
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" placeholder="パスワードを入力">
+            </div>
+
+            <button type="submit" class="submit-btn">
+                登録する
+            </button>
+        </form>
+
+        <div class="login-link-container">
+            すでにアカウントをお持ちですか？
+            <a class="login-link" onclick="goLogin()">ログイン</a>
+        </div>
     </div>
-
-    <br>
-
-    <button type="submit">
-        登録
-    </button>
-
-</form>
+</main>
 
 <script>
+function goHome(){
+    window.location.href = "/";
+}
+
+function goLogin(){
+    window.location.href = "/login";
+}
 
 document.getElementById("registerForm").addEventListener("submit", async function(e){
-
     e.preventDefault();
 
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const response = await fetch("/register",{
-        method:"POST",
-        headers:{
-            "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-            username:username,
-            password:password
-        })
-    });
+    try {
+        const response = await fetch("/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
 
-    const result = await response.json();
+        const result = await response.json();
 
-    alert(result.message);
-
+        if (response.ok) {
+            alert(result.message || "登録が完了しました");
+            window.location.href = "/login";
+        } else {
+            alert("登録できませんでした: " + (result.エラー || "何かの問題"));
+        }
+    } catch(error) {
+        console.error("接続エラー:", error);
+        alert("接続に問題が起きました、再度お試しください。");
+    }
 });
 </script>
 

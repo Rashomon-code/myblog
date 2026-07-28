@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -31,33 +31,20 @@
             font-size:28px;
             font-weight:bold;
             color:#333;
+            cursor: pointer;
         }
 
         .header-buttons {
             display: flex;
             gap: 12px;
-        }
-
-        .register-btn{
-            background:#4CAF50;
-            color:white;
-            border:none;
-            padding:12px 28px;
-            border-radius:8px;
-            font-size:16px;
-            cursor:pointer;
-            transition:.3s;
-        }
-
-        .register-btn:hover{
-            background:#45a049;
+            align-items: center;
         }
 
         .login-btn{
             background:#2196F3;
             color:white;
             border:none;
-            padding:12px 28px;
+            padding:10px 24px;
             border-radius:8px;
             font-size:16px;
             cursor:pointer;
@@ -66,6 +53,27 @@
 
         .login-btn:hover{
             background:#1e87f0;
+        }
+
+        .logout-btn{
+            background:#ff4d4f;
+            color:white;
+            border:none;
+            padding:10px 24px;
+            border-radius:8px;
+            font-size:16px;
+            cursor:pointer;
+            transition:.3s;
+        }
+
+        .logout-btn:hover{
+            background:#d9363e;
+        }
+
+        .welcome-text {
+            color: #555;
+            font-size: 16px;
+            font-weight: bold;
         }
 
         main{
@@ -86,49 +94,67 @@
             color:#777;
             font-size:20px;
         }
-
     </style>
 </head>
 
 <body>
 
 <header>
-
-    <div class="logo">
+    <div class="logo" onclick="goHome()">
         My Blog
     </div>
 
-    <div class="header-buttons">
+    <div class="header-buttons" id="authContainer">
         <button class="login-btn" onclick="goLogin()">
             ログイン
         </button>
-        <button class="register-btn" onclick="goRegister()">
-            ユーザー登録
-        </button>
     </div>
-
 </header>
 
 <main>
-
-    <h1>ようこそ！</h1>
-
+    <h1 id="mainTitle">ようこそ！</h1>
     <p>
         シンプルなブログへようこそ。
     </p>
-
 </main>
 
 <script>
-
-function goRegister(){
-    window.location.href = "/register";
+function goHome(){
+    window.location.href = "/";
 }
 
 function goLogin(){
     window.location.href = "/login";
 }
 
+document.addEventListener("DOMContentLoaded", function() {
+    const token = localStorage.getItem("token");
+    const authContainer = document.getElementById("authContainer");
+    const mainTitle = document.getElementById("mainTitle");
+
+    if (token) {
+        mainTitle.textContent = "ようこそ、おかえりなさい！";
+        
+        authContainer.innerHTML = `
+            <span class="welcome-text">ログイン中</span>
+            <button class="logout-btn" onclick="logout()">
+                ログアウト
+            </button>
+        `;
+    } else {
+        authContainer.innerHTML = `
+            <button class="login-btn" onclick="goLogin()">
+                ログイン
+            </button>
+        `;
+    }
+});
+
+function logout() {
+    localStorage.removeItem("token");
+    alert("ログアウトしました");
+    window.location.reload();
+}
 </script>
 
 </body>

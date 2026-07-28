@@ -100,6 +100,24 @@
             background:#1e87f0;
         }
 
+        .register-link-container {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .register-link {
+            color: #2196F3;
+            text-decoration: none;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+
+        .register-link:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 
@@ -130,6 +148,11 @@
                 ログインする
             </button>
         </form>
+
+        <div class="register-link-container">
+            アカウントをお持ちでないですか？
+            <a class="register-link" onclick="goRegister()">新規登録</a>
+        </div>
     </div>
 </main>
 
@@ -138,26 +161,43 @@ function goHome(){
     window.location.href = "/";
 }
 
+function goRegister(){
+    window.location.href = "/register";
+}
+
 document.getElementById("loginForm").addEventListener("submit", async function(e){
     e.preventDefault();
 
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const response = await fetch("/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            username: username,
-            password: password
-        })
-    });
+    try{
+        const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
 
-    const result = await response.json();
+        const result = await response.json();
 
-    alert(result.message);
+        if (response.ok){
+            localStorage.setItem("token", result.token);
+
+            alert(result.message);
+
+            window.location.href = "/";
+        }else{
+            alert("ログインできませんでした: " + (result.エラー || "何かの問題"));
+        }
+    } catch(error){
+        console.error("接続エラー:", error);
+        alert("接続に問題が起きました、再度お試しください。");
+    }
 });
 </script>
 
