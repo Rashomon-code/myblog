@@ -7,11 +7,11 @@ import (
 )
 
 type JWTService struct {
-	secret string
+	Secret string
 }
 
 func NewJWTService(secret string) *JWTService {
-	return &JWTService{secret: secret}
+	return &JWTService{Secret: secret}
 }
 
 func (j *JWTService) GenerateToken(username string) (string, error) {
@@ -28,7 +28,7 @@ func (j *JWTService) GenerateToken(username string) (string, error) {
 	)
 
 	tokenString, err := token.SignedString(
-		[]byte(j.secret),
+		[]byte(j.Secret),
 	)
 	if err != nil {
 		return "", err
