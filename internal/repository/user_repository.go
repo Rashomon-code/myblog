@@ -44,3 +44,17 @@ func (r *UserRepository) CreateUser(username, passwordHash string) error {
 	fmt.Println("登録完了しました。")
 	return nil
 }
+
+func (r *UserRepository) FindByUsername(username string) (int64, error) {
+	selectSQL := `SELECT id FROM users WHERE username = ?`
+
+	var userID int64
+
+	row := r.db.QueryRow(selectSQL, username)
+	err := row.Scan(&userID)
+	if err != nil {
+		return 0, fmt.Errorf("ユーザーデータが獲得できませんでした: %w", err)
+	}
+
+	return userID, nil
+}

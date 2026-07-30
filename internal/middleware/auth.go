@@ -57,6 +57,14 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		userid, ok := claims["id"].(int64)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ログイン中にエラーが起きました。"})
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", userid)
 		c.Set("username", username)
 		c.Next()
 	}

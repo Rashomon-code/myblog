@@ -38,7 +38,12 @@ func (s *AuthService) Login(username, password string) (string, error) {
 		return "", errors.New("入力に誤りがございます。")
 	}
 
-	token, err := s.jwt.GenerateToken(username)
+	userID, err := s.repo.FindByUsername(username)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := s.jwt.GenerateToken(username, userID)
 	if err != nil {
 		return "", err
 	}

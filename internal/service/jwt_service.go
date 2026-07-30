@@ -14,8 +14,9 @@ func NewJWTService(secret string) *JWTService {
 	return &JWTService{Secret: secret}
 }
 
-func (j *JWTService) GenerateToken(username string) (string, error) {
+func (j *JWTService) GenerateToken(username string, userID int64) (string, error) {
 	claims := jwt.MapClaims{
+		"id":       userID,
 		"username": username,
 		"exp": time.Now().Add(
 			time.Hour * 24,
