@@ -13,7 +13,7 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 	return &PostRepository{db: db}
 }
 
-func (r *PostRepository) CreatePost(userID int, title string, content string) error {
+func (r *PostRepository) CreatePost(userID int64, title string, content string) error {
 	insertSQL := `
 		INSERT INTO posts (user_id, title, content)
 		VALUES (?, ?, ?)	

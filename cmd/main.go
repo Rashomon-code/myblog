@@ -51,6 +51,7 @@ func main() {
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
+		api.POST("/posts", postHandle.CreatePostAPI)
 	}
 
 	r.Run(":8080")
