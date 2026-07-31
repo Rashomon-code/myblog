@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/Rashomon-code/myblog/internal/repository"
 )
 
@@ -26,4 +27,8 @@ func (s *PostService) CreatePostService(userID int64, title string, content stri
 		return err
 	}
 	return nil
+}
+
+func (s *PostService) GetUserMyPage(userID int64) ([]model.Post, error) {
+	return s.repo.GetPostsByUserID(userID)
 }
