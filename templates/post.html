@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>新規投稿</title>
+
+    <style>
+        body {
+            width: 600px;
+            margin: 40px auto;
+            font-family: sans-serif;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            height: 200px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>新規投稿</h1>
+
+<form id="postForm">
+
+    <p>Title</p>
+    <input type="text" id="title">
+
+    <p>Content</p>
+    <textarea id="content"></textarea>
+
+    <button type="submit">投稿します</button>
+
+</form>
+
+<p>
+    <a href="/">ホーム画面</a>
+</p>
+
+<script>
+
+//token チェック
+const token = localStorage.getItem("token");
+
+if (!token) {
+    alert("先にログインしてください");
+    location.href = "/login";
+}
+
+document.getElementById("postForm").addEventListener("submit", async function(e){
+
+    e.preventDefault();
+
+    const title = document.getElementById("title").value;
+    const content = document.getElementById("content").value;
+
+    const response = await fetch("/api/posts",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json",
+            "Authorization":"Bearer " + token
+        },
+
+        body:JSON.stringify({
+            title,
+            content
+        })
+
+    });
+
+    if(response.ok){
+
+        alert("投稿しました");
+
+        location.href="/";
+
+    }else{
+
+        const error = await response.text();
+
+        alert(error);
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

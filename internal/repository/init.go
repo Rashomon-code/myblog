@@ -30,9 +30,11 @@ func InitSQL() (*sql.DB, error) {
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
 		user_id INTEGER NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	);
 	`
+	//FOREIGN KEY, PRIMARY KEY など table constraints は最後に書かなければなりません。
 
 	_, err = db.Exec(createTableSQL)
 	if err != nil {
