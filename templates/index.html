@@ -6,192 +6,61 @@
     <title>My Blog</title>
 
     <style>
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family: "Yu Gothic", sans-serif;
+        body {
+            width: 500px;
+            margin: 40px auto;
+            font-family: sans-serif;
         }
 
-        body{
-            background:#f5f5f5;
-        }
-
-        header{
-            background:white;
-            height:70px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            padding:0 60px;
-            box-shadow:0 2px 10px rgba(0,0,0,.1);
-        }
-
-        .logo{
-            font-size:28px;
-            font-weight:bold;
-            color:#333;
-            cursor: pointer;
-        }
-
-        .header-buttons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .login-btn{
-            background:#2196F3;
-            color:white;
-            border:none;
-            padding:6px 16px;
-            border-radius:6px;
-            font-size:14px;
-            cursor:pointer;
-            transition:.3s;
-        }
-
-        .login-btn:hover{
-            background:#1e87f0;
-        }
-
-        .logout-btn{
-            background:transparent;
-            color:#888;
-            border:1px solid #ddd;
-            padding:6px 12px;
-            border-radius:6px;
-            font-size:13px;
-            cursor:pointer;
-            transition:.3s;
-        }
-
-        .logout-btn:hover{
-            background:#f5f5f5;
-            color:#ff4d4f;
-            border-color:#ff4d4f;
-        }
-
-        .create-btn {
-            background: #52c41a;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: .3s;
-        }
-
-        .create-btn:hover {
-            background: #389e0d;
-        }
-
-        .mypage-link {
-            color: #555;
-            font-size: 14px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: .3s;
-        }
-
-        .mypage-link:hover {
-            color: #2196F3;
-        }
-
-        main{
-            height:calc(100vh - 70px);
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            flex-direction:column;
-        }
-
-        h1{
-            font-size:50px;
-            color:#333;
-        }
-
-        p{
-            margin-top:20px;
-            color:#777;
-            font-size:20px;
+        button {
+            margin: 5px;
         }
     </style>
 </head>
 
 <body>
 
-<header>
-    <div class="logo" onclick="goHome()">
-        My Blog
-    </div>
+<h1>My Blog</h1>
 
-    <div class="header-buttons" id="authContainer">
-        <button class="login-btn" onclick="goLogin()">
-            ログイン
-        </button>
-    </div>
-</header>
+<p id="status">ログインしてください</p>
 
-<main>
-    <h1 id="mainTitle">ようこそ！</h1>
-    <p>
-        シンプルなブログへようこそ。
-    </p>
-</main>
+<div id="menu">
+    <button onclick="goLogin()">Login</button>
+    <button onclick="goRegister()">Register</button>
+</div>
 
 <script>
-function goHome(){
-    window.location.href = "/";
+
+function goLogin() {
+    location.href = "/login";
 }
 
-function goLogin(){
-    window.location.href = "/login";
+function goRegister() {
+    location.href = "/register";
 }
 
-function goCreate(){
-    window.location.href = "/create";
+function goPost() {
+    location.href = "/create";
 }
-
-function goMypage(){
-    window.location.href = "/mypage";
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const token = localStorage.getItem("token");
-    const authContainer = document.getElementById("authContainer");
-    const mainTitle = document.getElementById("mainTitle");
-
-    if (token) {
-        mainTitle.textContent = "ようこそ、おかえりなさい！";
-        
-        authContainer.innerHTML = `
-            <button class="create-btn" onclick="goCreate()">
-                ✏️ 投稿
-            </button>
-            <a href="#" class="mypage-link" onclick="goMypage(); return false;">マイページ</a>
-            <button class="logout-btn" onclick="logout()">
-                ログアウト
-            </button>
-        `;
-    } else {
-        authContainer.innerHTML = `
-            <button class="login-btn" onclick="goLogin()">
-                ログイン
-            </button>
-        `;
-    }
-});
 
 function logout() {
     localStorage.removeItem("token");
-    alert("ログアウトしました");
-    window.location.reload();
+    location.reload();
 }
+
+const token = localStorage.getItem("token");
+
+if (token) {
+
+    document.getElementById("status").textContent = "お帰りなさい";
+
+    document.getElementById("menu").innerHTML = `
+        <button onclick="goPost()">Create Post</button>
+        <button onclick="logout()">Logout</button>
+    `;
+
+}
+
 </script>
 
 </body>
