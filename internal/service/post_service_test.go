@@ -18,7 +18,7 @@ func TestCreatePostService(t *testing.T) {
 		}
 
 		expectedMsg := "タイトルが入力されていません"
-		if err != nil && err.Error() != expectedMsg {
+		if err.Error() != expectedMsg {
 			t.Errorf("エラーメッセージが相違します: [%s]のはずですが、 [%s]でした", expectedMsg, err.Error())
 		}
 	}

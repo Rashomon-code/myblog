@@ -43,6 +43,10 @@ function goPost() {
     location.href = "/create";
 }
 
+function goMypage() {
+    location.href = "/mypage"
+}
+
 function logout() {
     localStorage.removeItem("token");
     location.reload();
@@ -56,6 +60,7 @@ if (token) {
 
     document.getElementById("menu").innerHTML = `
         <button onclick="goPost()">Create Post</button>
+        <button onclick="goMypage()">My Page</button>
         <button onclick="logout()">Logout</button>
     `;
 

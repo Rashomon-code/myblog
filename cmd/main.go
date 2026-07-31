@@ -48,13 +48,17 @@ func main() {
 	})
 	r.POST("/login", authHandle.LoginAPI)
 
-	r.GET("create", func(ctx *gin.Context) {
+	r.GET("/create", func(ctx *gin.Context) {
 		ctx.File("templates/post.html")
+	})
+	r.GET("/mypage", func(ctx *gin.Context) {
+		ctx.File("templates/mypage.html")
 	})
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
 		api.POST("/posts", postHandle.CreatePostAPI)
+		api.GET("/mypage", postHandle.MyPageAPI)
 	}
 
 	r.Run(":8080")
