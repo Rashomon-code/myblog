@@ -59,6 +59,7 @@ func main() {
 	{
 		api.POST("/posts", postHandle.CreatePostAPI)
 		api.GET("/mypage", postHandle.MyPageAPI)
+		api.GET("/posts", postHandle.PostDetailAPI)
 	}
 
 	r.Run(":8080")

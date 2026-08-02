@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -50,6 +51,7 @@ func (h *PostHandle) MyPageAPI(c *gin.Context) {
 	posts, err := h.postService.GetUserMyPage(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"エラー": "ポスト獲得できませんでした"})
+		log.Printf("Bind error: %v", err)
 		return
 	}
 
@@ -57,4 +59,8 @@ func (h *PostHandle) MyPageAPI(c *gin.Context) {
 		"user_id": userID,
 		"posts":   posts,
 	})
+}
+
+func (h *PostHandle) PostDetailAPI(c *gin.Context) {
+
 }

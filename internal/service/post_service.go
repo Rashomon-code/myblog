@@ -29,6 +29,6 @@ func (s *PostService) CreatePostService(userID int64, title string, content stri
 	return nil
 }
 
-func (s *PostService) GetUserMyPage(userID int64) ([]model.Post, error) {
-	return s.repo.GetPostsByUserID(userID)
+func (s *PostService) GetUserMyPage(userID int64) ([]model.ArticleSummary, error) {
+	return s.repo.GetTitleByUserID(userID)
 }
