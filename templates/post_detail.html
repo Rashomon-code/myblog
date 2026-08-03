@@ -41,7 +41,7 @@
 
 <h1 id="title">読み込み中...</h1>
 <div class="post-meta">
-    <span>投稿日: <span id="created-at">-</span></span>
+    <span>投稿日: <span id="created_at">-</span></span>
 </div>
 
 <div class="post-content" id="content">
@@ -73,29 +73,28 @@ async function fetchPostDetail() {
     }
 
     try {
-        // 實際開發時替換為您的 API Endpoint
-        // const response = await fetch(`/api/posts/${postId}`);
-        // const post = await response.json();
+        const response = await fetch(`/post/detail?id=${postId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
 
-        // 假資料示範
-        const post = {
-            id: postId,
-            title: "初めてのブログ投稿",
-            createdAt: "2026-08-01",
-            content: "これはサンプル記事の内容です。Webアプリケーションの構築はとても楽しいですね！",
-            authorId: "user_123" // 假設的文章作者 ID
-        };
+        if (!response.ok) {
+            throw new Error(`HTTP エラー! status: ${response.status}`);
+        }
 
-        // 渲染文章內容
+        const resData = await response.json();
+        const post = resData.post;
+
         document.getElementById("title").textContent = post.title;
-        document.getElementById("created-at").textContent = post.createdAt;
+        document.getElementById("created_at").textContent = post.created_at;
         document.getElementById("content").textContent = post.content;
 
-        // 如果使用者已登入，顯示編輯/刪除按鈕
         if (token) {
             document.getElementById("action-buttons").innerHTML = `
-                <button onclick="goEdit('${post.id}')">Edit Post</button>
-                <button onclick="deletePost('${post.id}')">Delete Post</button>
+                <button onclick="goEdit('${resData.post_id}')">Edit Post</button>
+                <button onclick="deletePost('${resData.post_id}')">Delete Post</button>
             `;
         }
     } catch (error) {

@@ -33,6 +33,6 @@ func (s *PostService) GetUserMyPage(userID int64) ([]model.ArticleSummary, error
 	return s.repo.GetTitleByUserID(userID)
 }
 
-func (s *PostService) PostDetailService(postID int64) (model.Post, error) {
+func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) {
 	return s.repo.GetPostDetail(postID)
 }
