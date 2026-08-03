@@ -1,7 +1,9 @@
 package handle
 
 import (
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/Rashomon-code/myblog/internal/service"
@@ -50,11 +52,32 @@ func (h *PostHandle) MyPageAPI(c *gin.Context) {
 	posts, err := h.postService.GetUserMyPage(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"エラー": "ポスト獲得できませんでした"})
+		log.Printf("Bind error: %v", err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"user_id": userID,
 		"posts":   posts,
+	})
+}
+
+func (h *PostHandle) PostDetailAPI(c *gin.Context) {
+	idStr := c.Query("id")
+	postID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+		return
+	}
+
+	post, err := h.postService.PostDetailService(postID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"post_id": postID,
+		"post":    post,
 	})
 }

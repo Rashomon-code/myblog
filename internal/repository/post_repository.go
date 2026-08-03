@@ -29,8 +29,8 @@ func (r *PostRepository) CreatePost(userID int64, title string, content string) 
 	return nil
 }
 
-func (r *PostRepository) GetPostsByUserID(userID int64) ([]model.Post, error) {
-	selectSQL := `SELECT id, title, content, user_id, created_at FROM posts WHERE user_id = ?`
+func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary, error) {
+	selectSQL := `SELECT id, title, created_at FROM posts WHERE user_id = ?`
 
 	rows, err := r.db.Query(selectSQL, userID)
 	if err != nil {
@@ -38,14 +38,14 @@ func (r *PostRepository) GetPostsByUserID(userID int64) ([]model.Post, error) {
 	}
 	defer rows.Close()
 
-	var posts []model.Post
+	var posts []model.ArticleSummary
 	for rows.Next() {
-		var p model.Post
-		err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.UserID, &p.CreatedAt)
+		var a model.ArticleSummary
+		err := rows.Scan(&a.ID, &a.Title, &a.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
-		posts = append(posts, p)
+		posts = append(posts, a)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -53,4 +53,17 @@ func (r *PostRepository) GetPostsByUserID(userID int64) ([]model.Post, error) {
 	}
 
 	return posts, nil
+}
+
+func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
+	selectSQL := `SELECT id, title, content, created_at FROM posts WHERE id = ?`
+
+	var p model.PostDetail
+	row := r.db.QueryRow(selectSQL, postID)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt)
+	if err != nil {
+		return model.PostDetail{}, fmt.Errorf("文章が読み取れませんでした: %w", err)
+	}
+
+	return p, nil
 }

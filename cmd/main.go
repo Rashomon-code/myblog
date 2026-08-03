@@ -54,6 +54,12 @@ func main() {
 	r.GET("/mypage", func(ctx *gin.Context) {
 		ctx.File("templates/mypage.html")
 	})
+
+	r.GET("/post", func(ctx *gin.Context) {
+		ctx.File("templates/post_detail.html")
+	})
+	r.GET("/post/detail", postHandle.PostDetailAPI)
+
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
