@@ -95,3 +95,21 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"メッセージ": "削除しました"})
 }
+
+func (h *PostHandle) ShowEditPostAPI(c *gin.Context) {
+	idStr := c.Param("id")
+	postID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
+	}
+
+	post, err := h.postService.PostDetailService(postID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		return
+	}
+
+	c.HTML(http.StatusOK, "edit.html", gin.H{
+		"post": post,
+	})
+}
