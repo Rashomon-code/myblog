@@ -73,7 +73,7 @@ async function fetchPostDetail() {
     }
 
     try {
-        const response = await fetch(`/post/detail?id=${postId}`, {
+        const response = await fetch(`/posts/${postId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -93,8 +93,8 @@ async function fetchPostDetail() {
 
         if (token) {
             document.getElementById("action-buttons").innerHTML = `
-                <button onclick="goEdit('${resData.post_id}')">Edit Post</button>
-                <button onclick="deletePost('${resData.post_id}')">Delete Post</button>
+                <button onclick="goEdit('${resData.post.id}')">Edit Post</button>
+                <button onclick="deletePost('${resData.post.id}')">Delete Post</button>
             `;
         }
     } catch (error) {
@@ -105,13 +105,10 @@ async function fetchPostDetail() {
 
 async function deletePost(id) {
     if (confirm("本当にこの記事を削除しますか？")) {
-        // 刪除邏輯
-        /*
         await fetch(`/api/posts/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        */
         alert("記事を削除しました");
         goHome();
     }

@@ -63,7 +63,7 @@ func (h *PostHandle) MyPageAPI(c *gin.Context) {
 }
 
 func (h *PostHandle) PostDetailAPI(c *gin.Context) {
-	idStr := c.Query("id")
+	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
@@ -77,7 +77,21 @@ func (h *PostHandle) PostDetailAPI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"post_id": postID,
-		"post":    post,
+		"post": post,
 	})
+}
+
+func (h *PostHandle) DeletePostAPI(c *gin.Context) {
+	idStr := c.Param("id")
+	postID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+	}
+
+	err = h.postService.DeletePostService(postID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"メッセージ": "削除しました"})
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -66,4 +67,23 @@ func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
 	}
 
 	return p, nil
+}
+
+func (r *PostRepository) DeletePost(postID int64) error {
+	deleteSQL := `DELETE FROM posts WHERE id = ?`
+
+	result, err := r.db.Exec(deleteSQL, postID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("何も削除していませんでした")
+	}
+
+	return nil
 }

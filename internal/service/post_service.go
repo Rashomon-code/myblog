@@ -36,3 +36,7 @@ func (s *PostService) GetUserMyPage(userID int64) ([]model.ArticleSummary, error
 func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) {
 	return s.repo.GetPostDetail(postID)
 }
+
+func (s *PostService) DeletePostService(postID int64) error {
+	return s.repo.DeletePost(postID)
+}

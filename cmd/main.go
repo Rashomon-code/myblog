@@ -58,13 +58,14 @@ func main() {
 	r.GET("/post", func(ctx *gin.Context) {
 		ctx.File("templates/post_detail.html")
 	})
-	r.GET("/post/detail", postHandle.PostDetailAPI)
+	r.GET("/posts/:id", postHandle.PostDetailAPI)
 
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
 	{
 		api.POST("/posts", postHandle.CreatePostAPI)
 		api.GET("/mypage", postHandle.MyPageAPI)
+		api.DELETE("/posts/:id", postHandle.DeletePostAPI)
 	}
 
 	r.Run(":8080")
