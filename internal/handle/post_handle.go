@@ -26,7 +26,7 @@ func (h *PostHandle) CreatePostAPI(c *gin.Context) {
 	}
 	userID := userIDVal.(int64)
 
-	var req model.CreatePostRequest
+	var req model.UpdatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"エラー": "入力に誤りがございます: " + err.Error()})
 		return
@@ -86,30 +86,41 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+		return
 	}
 
 	err = h.postService.DeletePostService(postID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"メッセージ": "削除しました"})
 }
 
-func (h *PostHandle) ShowEditPostAPI(c *gin.Context) {
+func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
-	}
-
-	post, err := h.postService.PostDetailService(postID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
 		return
 	}
 
-	c.HTML(http.StatusOK, "edit.html", gin.H{
-		"post": post,
-	})
+	var req model.UpdatePostRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "入力に誤りがございます"})
+		return
+	}
+
+	err = h.postService.EditPostService(postID, req.Title, req.Content)
+	if err != nil {
+		if err.Error() == "更新できませんでした" {
+			c.JSON(http.StatusNotFound, gin.H{"エラー": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": "更新できませんでした: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"メッセージ": "更新しました"})
 }

@@ -56,12 +56,11 @@ function goHome() {
 }
 
 function goEdit(postId) {
-    location.href = `/edit?id=${postId}`;
+    location.href = `/posts/${postId}/edit`;
 }
 
-// URL から id を獲得します（/post_detail.html?id=123）
-const urlParams = new URLSearchParams(window.location.search);
-const postId = urlParams.get("id");
+const pathSegments = window.location.pathname.split("/");
+const postId = pathSegments[pathSegments.length - 1];
 
 const token = localStorage.getItem("token");
 
@@ -73,7 +72,7 @@ async function fetchPostDetail() {
     }
 
     try {
-        const response = await fetch(`/posts/${postId}`, {
+        const response = await fetch(`/posts/${postId}/detail`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

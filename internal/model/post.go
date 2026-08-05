@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type CreatePostRequest struct {
+type UpdatePostRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }

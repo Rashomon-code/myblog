@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>投稿編集</title>
+
+    <style>
+        body {
+            width: 600px;
+            margin: 40px auto;
+            font-family: sans-serif;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            height: 200px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>投稿編集</h1>
+
+<form id="postForm">
+
+    <p>Title</p>
+    <input type="text" id="title">
+
+    <p>Content</p>
+    <textarea id="content"></textarea>
+
+    <button type="submit">更新します</button>
+
+</form>
+
+<p>
+    <a href="/">ホーム画面</a>
+</p>
+
+<script>
+
+// tokenチェック
+const token = localStorage.getItem("token");
+
+if (!token) {
+    alert("先にログインしてください");
+    location.href = "/login";
+}
+
+// URLからidを取得
+const pathSegments = window.location.pathname.split("/").filter(Boolean);
+const postId = pathSegments[1]
+
+// ページ表示時に記事を取得
+async function loadPost() {
+
+    const response = await fetch(`/api/posts/${postId}/detail`, {
+
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+
+    });
+
+    if (!response.ok) {
+
+        alert("記事が見つかりません");
+
+        location.href = "/";
+
+        return;
+
+    }
+
+    const data = await response.json();
+
+    // フォームに値をセット
+    document.getElementById("title").value = data.post.title;
+    document.getElementById("content").value = data.post.content;
+}
+
+loadPost();
+
+// 更新
+document.getElementById("postForm").addEventListener("submit", async function(e){
+
+    e.preventDefault();
+
+    const title = document.getElementById("title").value;
+    const content = document.getElementById("content").value;
+
+    const response = await fetch(`/api/posts/${postId}`, {
+
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+
+        body: JSON.stringify({
+            title,
+            content
+        })
+
+    });
+
+    if (response.ok) {
+
+        alert("更新しました");
+
+        location.href = "/";
+
+    } else {
+
+        const error = await response.text();
+
+        alert(error);
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

@@ -55,10 +55,14 @@ func main() {
 		ctx.File("templates/mypage.html")
 	})
 
-	r.GET("/post", func(ctx *gin.Context) {
+	r.GET("/posts/:id", func(ctx *gin.Context) {
 		ctx.File("templates/post_detail.html")
 	})
-	r.GET("/posts/:id", postHandle.PostDetailAPI)
+	r.GET("/posts/:id/detail", postHandle.PostDetailAPI)
+
+	r.GET("/posts/:id/edit", func(ctx *gin.Context) {
+		ctx.File("templates/edit.html")
+	})
 
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
@@ -66,6 +70,8 @@ func main() {
 		api.POST("/posts", postHandle.CreatePostAPI)
 		api.GET("/mypage", postHandle.MyPageAPI)
 		api.DELETE("/posts/:id", postHandle.DeletePostAPI)
+		api.GET("/posts/:id/detail", postHandle.PostDetailAPI)
+		api.PUT("/posts/:id", postHandle.EditPostAPI)
 	}
 
 	r.Run(":8080")
