@@ -78,7 +78,7 @@ if (!token) {
         } else {
             postsHtml = '<ul>';
             posts.forEach(post => {
-                postsHtml += `<li><a href="/post?id=${post.id}"><strong>${post.title}</strong></a><p>${post.created_at}</p></li>`;
+                postsHtml += `<li><a href="/posts/${post.id}"><strong>${post.title}</strong></a><p>${post.created_at}</p></li>`;
             });
             postsHtml += '</ul>';
         }

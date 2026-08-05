@@ -87,3 +87,22 @@ func (r *PostRepository) DeletePost(postID int64) error {
 
 	return nil
 }
+
+func (r *PostRepository) EditPost(postID int64, title string, content string) error {
+	editSQL := `UPDATE posts SET title = ?, content = ? WHERE id = ?`
+
+	result, err := r.db.Exec(editSQL, title, content, postID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("更新できませんでした")
+	}
+
+	return nil
+}

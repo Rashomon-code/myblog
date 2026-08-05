@@ -40,3 +40,11 @@ func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) 
 func (s *PostService) DeletePostService(postID int64) error {
 	return s.repo.DeletePost(postID)
 }
+
+func (s *PostService) EditPostService(postID int64, title string, content string) error {
+	err := s.repo.EditPost(postID, title, content)
+	if err != nil {
+		return err
+	}
+	return nil
+}
