@@ -15,6 +15,24 @@
         button {
             margin: 5px;
         }
+
+        #menu {
+            margin-bottom: 35px;
+        }
+
+        .post-card {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+
+        .post-card h3 {
+            margin: 0 0 5px 0;
+        }
+
+        .post-card p {
+            margin: 0;
+            color: #555;
+        }
     </style>
 </head>
 
@@ -27,6 +45,11 @@
 <div id="menu">
     <button onclick="goLogin()">Login</button>
     <button onclick="goRegister()">Register</button>
+</div>
+
+<h2 class="section-title">最新記事</h2>
+<div id="posts-container">
+    <p>ロード中</p>
 </div>
 
 <script>
@@ -65,6 +88,31 @@ if (token) {
     `;
 
 }
+
+async function loadPosts() {
+    const container = document.getElementById("posts-container");
+
+    const response = await fetch('/posts');
+    const data = await response.json();
+    const posts = data.posts;
+
+    container.innerHTML = "";
+
+    posts.forEach(post => {
+        const postElement = document.createElement("article");
+        postElement.className = "post-card";
+
+        postElement.innerHTML = `
+            <h3>
+                <a href="/posts/${post.id}">${post.title}</a>
+            </h3>
+        `;
+
+        container.appendChild(postElement);
+    });
+}
+
+loadPosts();
 
 </script>
 

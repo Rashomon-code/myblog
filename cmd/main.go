@@ -37,6 +37,7 @@ func main() {
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.File("templates/index.html")
 	})
+	r.GET("/posts", postHandle.PostListAPI)
 
 	r.GET("/register", func(ctx *gin.Context) {
 		ctx.File("templates/register.html")
