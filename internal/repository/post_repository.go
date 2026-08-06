@@ -26,7 +26,6 @@ func (r *PostRepository) CreatePost(userID int64, title string, content string) 
 		return fmt.Errorf("投稿失敗: %w", err)
 	}
 
-	fmt.Println("投稿しました。")
 	return nil
 }
 
@@ -39,21 +38,7 @@ func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary,
 	}
 	defer rows.Close()
 
-	var posts []model.ArticleSummary
-	for rows.Next() {
-		var a model.ArticleSummary
-		err := rows.Scan(&a.ID, &a.Title, &a.CreatedAt)
-		if err != nil {
-			return nil, err
-		}
-		posts = append(posts, a)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return posts, nil
+	return scanArticleSummaries(rows)
 }
 
 func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
@@ -105,4 +90,34 @@ func (r *PostRepository) EditPost(postID int64, title string, content string) er
 	}
 
 	return nil
+}
+
+func scanArticleSummaries(rows *sql.Rows) ([]model.ArticleSummary, error) {
+	defer rows.Close()
+
+	var posts []model.ArticleSummary
+	for rows.Next() {
+		var a model.ArticleSummary
+		if err := rows.Scan(&a.ID, &a.Title, &a.CreatedAt); err != nil {
+			return nil, err
+		}
+		posts = append(posts, a)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+func (r *PostRepository) GetAllPost() ([]model.ArticleSummary, error) {
+	selectSQL := `SELECT id, title, created_at FROM posts ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(selectSQL)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanArticleSummaries(rows)
 }

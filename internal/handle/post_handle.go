@@ -124,3 +124,15 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"メッセージ": "更新しました"})
 }
+
+func (h *PostHandle) PostListAPI(c *gin.Context) {
+	posts, err := h.postService.PostHomeService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"エラー": "ポスト獲得できませんでした"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"posts": posts,
+	})
+}

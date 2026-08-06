@@ -26,6 +26,7 @@ func (s *PostService) CreatePostService(userID int64, title string, content stri
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -47,4 +48,8 @@ func (s *PostService) EditPostService(postID int64, title string, content string
 		return err
 	}
 	return nil
+}
+
+func (s *PostService) PostHomeService() ([]model.ArticleSummary, error) {
+	return s.repo.GetAllPost()
 }
