@@ -34,16 +34,31 @@ func (s *PostService) GetUserMyPage(userID int64) ([]model.ArticleSummary, error
 	return s.repo.GetTitleByUserID(userID)
 }
 
-func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) {
+func (s *PostService) PostDetailService(postID int64) (model.Post, error) {
 	return s.repo.GetPostDetail(postID)
 }
 
-func (s *PostService) DeletePostService(postID int64) error {
+func (s *PostService) DeletePostService(postID, userID int64) error {
+	post, err := s.repo.GetPostDetail(postID)
+	if err != nil {
+		return err
+	}
+	if post.UserID != userID {
+		return errors.New("権限がありません")
+	}
 	return s.repo.DeletePost(postID)
 }
 
-func (s *PostService) EditPostService(postID int64, title string, content string) error {
-	err := s.repo.EditPost(postID, title, content)
+func (s *PostService) EditPostService(postID int64, title string, content string, userID int64) error {
+	post, err := s.repo.GetPostDetail(postID)
+	if err != nil {
+		return err
+	}
+	if post.UserID != userID {
+		return errors.New("権限がありません")
+	}
+
+	err = s.repo.EditPost(postID, title, content)
 	if err != nil {
 		return err
 	}
