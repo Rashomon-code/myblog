@@ -8,6 +8,8 @@ import (
 	"github.com/Rashomon-code/myblog/internal/repository"
 )
 
+var ErrForbidden = errors.New("権限がありません")
+
 type PostService struct {
 	repo *repository.PostRepository
 }
@@ -39,32 +41,35 @@ func (s *PostService) PostDetailService(postID int64) (model.Post, error) {
 }
 
 func (s *PostService) DeletePostService(postID, userID int64) error {
-	post, err := s.repo.GetPostDetail(postID)
+	_, err := s.getPostAndCheckOwner(postID, userID)
 	if err != nil {
 		return err
 	}
-	if post.UserID != userID {
-		return errors.New("権限がありません")
-	}
+
 	return s.repo.DeletePost(postID)
 }
 
 func (s *PostService) EditPostService(postID int64, title string, content string, userID int64) error {
-	post, err := s.repo.GetPostDetail(postID)
+	_, err := s.getPostAndCheckOwner(postID, userID)
 	if err != nil {
 		return err
-	}
-	if post.UserID != userID {
-		return errors.New("権限がありません")
 	}
 
-	err = s.repo.EditPost(postID, title, content)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.repo.EditPost(postID, title, content)
 }
 
 func (s *PostService) PostHomeService() ([]model.ArticleSummary, error) {
 	return s.repo.GetAllPost()
+}
+
+func (s *PostService) getPostAndCheckOwner(postID, userID int64) (*model.Post, error) {
+	post, err := s.repo.GetPostDetail(postID)
+	if err != nil {
+		return nil, err
+	}
+
+	if post.UserID != userID {
+		return nil, ErrForbidden
+	}
+	return &post, nil
 }
