@@ -15,13 +15,6 @@ type Post struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
-type PostDetail struct {
-	ID        int64     `json:"id" db:"id"`
-	Title     string    `json:"title" db:"title"`
-	Content   string    `json:"content" db:"content"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-}
-
 type ArticleSummary struct {
 	ID        int64     `json:"id" db:"id"`
 	Title     string    `json:"title" db:"title"`

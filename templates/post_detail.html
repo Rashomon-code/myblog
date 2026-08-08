@@ -104,12 +104,32 @@ async function fetchPostDetail() {
 
 async function deletePost(id) {
     if (confirm("本当にこの記事を削除しますか？")) {
-        await fetch(`/api/posts/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        alert("記事を削除しました");
-        goHome();
+        try {
+            const response = await fetch(`/api/posts/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                let errorMsg = "削除できませんでした";
+                try {
+                    const errData = await response.json();
+                    if (errData["エラー"]) {
+                        errorMsg = errData["エラー"];
+                    }
+                } catch (e) {
+
+                }
+                throw new Error(errorMsg)
+            }
+
+            const resData = await response.json();
+            alert(resData["メッセージ"] || "削除しました");
+            goHome();
+        } catch (error) {
+            console.error("エラー:", error);
+            alert(error.message);
+        }
     }
 }
 
