@@ -9,9 +9,13 @@ import (
 	"github.com/Rashomon-code/myblog/internal/repository"
 	"github.com/Rashomon-code/myblog/internal/router"
 	"github.com/Rashomon-code/myblog/internal/service"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println(".env ファイルが見つかりませんでした。デフォルト設定を使います")
+	}
 	secret := os.Getenv("JWT_SECRET")
 
 	db, err := repository.InitSQL()

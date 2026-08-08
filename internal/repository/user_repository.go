@@ -15,7 +15,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (r *UserRepository) GetPasswordHash(username string) (string, error) {
-	selectSQL := `SELECT password_hash FROM users WHERE username = ?`
+	selectSQL := `SELECT password_hash FROM users WHERE username = $1`
 
 	var passwordHash string
 
@@ -34,7 +34,7 @@ func (r *UserRepository) GetPasswordHash(username string) (string, error) {
 func (r *UserRepository) CreateUser(username, passwordHash string) error {
 	insertSQL := `
 		INSERT INTO users (username, password_hash)
-		VALUES (?, ?)
+		VALUES ($1, $2)
 	`
 
 	_, err := r.db.Exec(insertSQL, username, passwordHash)
@@ -46,7 +46,7 @@ func (r *UserRepository) CreateUser(username, passwordHash string) error {
 }
 
 func (r *UserRepository) FindByUsername(username string) (int64, error) {
-	selectSQL := `SELECT id FROM users WHERE username = ?`
+	selectSQL := `SELECT id FROM users WHERE username = $1`
 
 	var userID int64
 
