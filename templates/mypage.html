@@ -56,7 +56,7 @@ if (!token) {
 } else {
     document.getElementById("status").textContent = "マイページ";
 
-    fetch('/api/mypage', {
+    fetch('/api/me/posts', {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token
