@@ -65,7 +65,7 @@ const postId = pathSegments[1]
 // ページ表示時に記事を取得
 async function loadPost() {
 
-    const response = await fetch(`/api/posts/${postId}/detail`, {
+    const response = await fetch(`/api/posts/${postId}`, {
 
         headers: {
             "Authorization": "Bearer " + token

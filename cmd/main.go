@@ -7,8 +7,8 @@ import (
 	"github.com/Rashomon-code/myblog/internal/handle"
 	"github.com/Rashomon-code/myblog/internal/middleware"
 	"github.com/Rashomon-code/myblog/internal/repository"
+	"github.com/Rashomon-code/myblog/internal/router"
 	"github.com/Rashomon-code/myblog/internal/service"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -32,48 +32,7 @@ func main() {
 	postService := service.NewPostService(postRepo)
 	postHandle := handle.NewPostHandle(postService)
 
-	r := gin.Default()
-
-	r.GET("/", func(ctx *gin.Context) {
-		ctx.File("templates/index.html")
-	})
-	r.GET("/posts", postHandle.PostListAPI)
-
-	r.GET("/register", func(ctx *gin.Context) {
-		ctx.File("templates/register.html")
-	})
-	r.POST("/register", authHandle.RegisterAPI)
-
-	r.GET("/login", func(ctx *gin.Context) {
-		ctx.File("templates/login.html")
-	})
-	r.POST("/login", authHandle.LoginAPI)
-
-	r.GET("/create", func(ctx *gin.Context) {
-		ctx.File("templates/post.html")
-	})
-	r.GET("/mypage", func(ctx *gin.Context) {
-		ctx.File("templates/mypage.html")
-	})
-
-	r.GET("/posts/:id", func(ctx *gin.Context) {
-		ctx.File("templates/post_detail.html")
-	})
-	r.GET("/posts/:id/detail", postHandle.PostDetailAPI)
-
-	r.GET("/posts/:id/edit", func(ctx *gin.Context) {
-		ctx.File("templates/edit.html")
-	})
-
-	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware())
-	{
-		api.POST("/posts", postHandle.CreatePostAPI)
-		api.GET("/mypage", postHandle.MyPageAPI)
-		api.DELETE("/posts/:id", postHandle.DeletePostAPI)
-		api.GET("/posts/:id/detail", postHandle.PostDetailAPI)
-		api.PUT("/posts/:id", postHandle.EditPostAPI)
-	}
+	r := router.SetupRouter(authHandle, postHandle, middleware)
 
 	r.Run(":8080")
 }
