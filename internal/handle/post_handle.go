@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -39,27 +38,6 @@ func (h *PostHandle) CreatePostAPI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"メッセージ": "投稿しました。"})
-}
-
-func (h *PostHandle) MyPageAPI(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ユーザーが見つかりませんでした"})
-		return
-	}
-
-	userID := userIDVal.(int64)
-	posts, err := h.postService.GetUserMyPage(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "ポスト獲得できませんでした"})
-		log.Printf("Bind error: %v", err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"user_id": userID,
-		"posts":   posts,
-	})
 }
 
 func (h *PostHandle) PostDetailAPI(c *gin.Context) {

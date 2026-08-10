@@ -26,17 +26,20 @@ func main() {
 
 	jwtService := service.NewJWTService(secret)
 
-	userRepo := repository.NewUserRepository(db)
-	authService := service.NewAuthService(userRepo, jwtService)
+	authRepo := repository.NewAuthRepository(db)
+	authService := service.NewAuthService(authRepo, jwtService)
 	authHandle := handle.NewAuthHandle(authService)
-
 	middleware := middleware.NewMiddleware(jwtService)
 
 	postRepo := repository.NewPostRepository(db)
 	postService := service.NewPostService(postRepo)
 	postHandle := handle.NewPostHandle(postService)
 
-	r := router.SetupRouter(authHandle, postHandle, middleware)
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandle := handle.NewUserHandle(userService, postService)
+
+	r := router.SetupRouter(authHandle, postHandle, middleware, userHandle)
 
 	r.Run(":8080")
 }
