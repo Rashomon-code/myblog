@@ -2,8 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+
+	"github.com/Rashomon-code/myblog/internal/model"
 )
 
 type UserRepository struct {
@@ -14,47 +15,26 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetPasswordHash(username string) (string, error) {
-	selectSQL := `SELECT password_hash FROM users WHERE username = ?`
+func (r *UserRepository) GetUserProfile(userID int64) (*model.UserProfile, error) {
+	selectSQL := `SELECT display_name, bio FROM user_profiles WHERE user_id = $1`
 
-	var passwordHash string
+	displayName := fmt.Sprintf("ユーザー %d", userID)
+	bio := "まだ何もありません"
 
-	row := r.db.QueryRow(selectSQL, username)
-	err := row.Scan(&passwordHash)
+	row := r.db.QueryRow(selectSQL, userID)
+	err := row.Scan(&displayName, &bio)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "", errors.New("入力に誤りがございます。")
+		} else {
+			return nil, err
 		}
-
-		return "", fmt.Errorf("予期せぬエラーが起きました: %w", err)
-	}
-	return passwordHash, nil
-}
-
-func (r *UserRepository) CreateUser(username, passwordHash string) error {
-	insertSQL := `
-		INSERT INTO users (username, password_hash)
-		VALUES (?, ?)
-	`
-
-	_, err := r.db.Exec(insertSQL, username, passwordHash)
-	if err != nil {
-		return fmt.Errorf("登録にエラーが起きました: %w", err)
-	}
-	fmt.Println("登録完了しました。")
-	return nil
-}
-
-func (r *UserRepository) FindByUsername(username string) (int64, error) {
-	selectSQL := `SELECT id FROM users WHERE username = ?`
-
-	var userID int64
-
-	row := r.db.QueryRow(selectSQL, username)
-	err := row.Scan(&userID)
-	if err != nil {
-		return 0, fmt.Errorf("ユーザーデータが獲得できませんでした: %w", err)
 	}
 
-	return userID, nil
+	userProfile := model.UserProfile{
+		UserID:      userID,
+		DisplayName: displayName,
+		Bio:         bio,
+	}
+
+	return &userProfile, nil
 }

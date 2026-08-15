@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -8,45 +9,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AuthHandle struct {
-	authService *service.AuthService
+type UserHandle struct {
+	userService *service.UserService
+	postService *service.PostService
 }
 
-func NewAuthHandle(s *service.AuthService) *AuthHandle {
-	return &AuthHandle{authService: s}
+func NewUserHandle(userService *service.UserService, postService *service.PostService) *UserHandle {
+	return &UserHandle{
+		userService: userService,
+		postService: postService,
+	}
 }
 
-func (a *AuthHandle) RegisterAPI(c *gin.Context) {
-	var req model.LoginRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
+func (h *UserHandle) MyPageAPI(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ユーザーが見つかりませんでした"})
 		return
 	}
 
-	err := a.authService.Register(req.Username, req.Password)
+	userID := userIDVal.(int64)
+	posts, err := h.postService.GetPostTitle(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "ポスト獲得できませんでした"})
+		log.Printf("Bind error: %v", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "登録しました"})
-}
-
-func (a *AuthHandle) LoginAPI(c *gin.Context) {
-	var req model.LoginRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
-		return
-	}
-
-	token, err := a.authService.Login(req.Username, req.Password)
-
+	user, err := h.userService.GetProfileService(userID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"エラー": "ユーザー情報が獲得できませんでした"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ログインしました", "token": token})
+	userPage := model.MyPageResponse{
+		UserProfile: *user,
+		Posts:       posts,
+	}
+
+	c.JSON(http.StatusOK, userPage)
 }

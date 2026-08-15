@@ -3,12 +3,21 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func InitSQL() (*sql.DB, error) {
-	db, err := sql.Open("sqlite", "./blog.db")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("データベースを開く際にエラーが発生しました: %w", err)
 	}
@@ -16,22 +25,29 @@ func InitSQL() (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("データベースの接続に問題が起きました: %w", err)
 	}
-	fmt.Println("SQLite に接続済み")
+	fmt.Println("PostgreSQL に接続済み")
 
 	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS users(
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		username TEXT UNIQUE NOT NULL,
 		password_hash TEXT NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS posts(
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id SERIAL PRIMARY KEY,
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
 		user_id INTEGER NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id)
+	);
+
+	CREATE TABLE IF NOT EXISTS user_profiles(
+		user_id INTEGER PRIMARY KEY,
+		display_name TEXT,
+		bio TEXT,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	);
 	`
 	//FOREIGN KEY, PRIMARY KEY など table constraints は最後に書かなければなりません。

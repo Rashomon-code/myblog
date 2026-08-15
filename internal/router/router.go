@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, mw *middleware.Middleware) *gin.Engine {
+func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, mw *middleware.Middleware, userHandle *handle.UserHandle) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/", func(ctx *gin.Context) {
@@ -53,7 +53,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.POST("/posts", postHandle.CreatePostAPI)
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
-			protected.GET("/me/posts", postHandle.MyPageAPI)
+			protected.GET("/me/posts", userHandle.MyPageAPI)
 		}
 	}
 

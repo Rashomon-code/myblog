@@ -19,7 +19,7 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 func (r *PostRepository) CreatePost(userID int64, title string, content string) error {
 	insertSQL := `
 		INSERT INTO posts (user_id, title, content)
-		VALUES (?, ?, ?)	
+		VALUES ($1, $2, $3)	
 	`
 	_, err := r.db.Exec(insertSQL, userID, title, content)
 	if err != nil {
@@ -30,7 +30,7 @@ func (r *PostRepository) CreatePost(userID int64, title string, content string) 
 }
 
 func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary, error) {
-	selectSQL := `SELECT id, title, created_at FROM posts WHERE user_id = ?`
+	selectSQL := `SELECT id, title, created_at FROM posts WHERE user_id = $1`
 
 	rows, err := r.db.Query(selectSQL, userID)
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary,
 }
 
 func (r *PostRepository) GetPostDetail(postID int64) (model.Post, error) {
-	selectSQL := `SELECT id, title, content, user_id, created_at FROM posts WHERE id = ?`
+	selectSQL := `SELECT id, title, content, user_id, created_at FROM posts WHERE id = $1`
 
 	var p model.Post
 	row := r.db.QueryRow(selectSQL, postID)
@@ -55,7 +55,7 @@ func (r *PostRepository) GetPostDetail(postID int64) (model.Post, error) {
 }
 
 func (r *PostRepository) DeletePost(postID int64) error {
-	deleteSQL := `DELETE FROM posts WHERE id = ?`
+	deleteSQL := `DELETE FROM posts WHERE id = $1`
 
 	result, err := r.db.Exec(deleteSQL, postID)
 	if err != nil {
@@ -74,7 +74,7 @@ func (r *PostRepository) DeletePost(postID int64) error {
 }
 
 func (r *PostRepository) EditPost(postID int64, title string, content string) error {
-	editSQL := `UPDATE posts SET title = ?, content = ? WHERE id = ?`
+	editSQL := `UPDATE posts SET title = $1, content = $2 WHERE id = $3`
 
 	result, err := r.db.Exec(editSQL, title, content, postID)
 	if err != nil {

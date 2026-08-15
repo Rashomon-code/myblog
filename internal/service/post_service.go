@@ -32,7 +32,7 @@ func (s *PostService) CreatePostService(userID int64, title string, content stri
 	return nil
 }
 
-func (s *PostService) GetUserMyPage(userID int64) ([]model.ArticleSummary, error) {
+func (s *PostService) GetPostTitle(userID int64) ([]model.ArticleSummary, error) {
 	return s.repo.GetTitleByUserID(userID)
 }
 
