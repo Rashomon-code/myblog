@@ -13,9 +13,8 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println(".env ファイルが見つかりませんでした。デフォルト設定を使います")
-	}
+	godotenv.Load()
+
 	secret := os.Getenv("JWT_SECRET")
 
 	db, err := repository.InitSQL()
