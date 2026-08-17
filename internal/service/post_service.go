@@ -40,19 +40,27 @@ func (s *PostService) PostDetailService(postID int64) (model.Post, error) {
 	return s.repo.GetPostDetail(postID)
 }
 
-func (s *PostService) DeletePostService(postID, userID int64) error {
-	_, err := s.getPostAndCheckOwner(postID, userID)
+func (s *PostService) DeletePostService(postID, userID int64, userRole string) error {
+	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
+	}
+
+	if post.UserID != userID && userRole != "admin" {
+		return ErrForbidden
 	}
 
 	return s.repo.DeletePost(postID)
 }
 
-func (s *PostService) EditPostService(postID int64, title string, content string, userID int64) error {
-	_, err := s.getPostAndCheckOwner(postID, userID)
+func (s *PostService) EditPostService(postID int64, title string, content string, userID int64, userRole string) error {
+	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
+	}
+
+	if post.UserID != userID && userRole != "admin" {
+		return ErrForbidden
 	}
 
 	return s.repo.EditPost(postID, title, content)
@@ -60,16 +68,4 @@ func (s *PostService) EditPostService(postID int64, title string, content string
 
 func (s *PostService) PostHomeService() ([]model.ArticleSummary, error) {
 	return s.repo.GetAllPost()
-}
-
-func (s *PostService) getPostAndCheckOwner(postID, userID int64) (*model.Post, error) {
-	post, err := s.repo.GetPostDetail(postID)
-	if err != nil {
-		return nil, err
-	}
-
-	if post.UserID != userID {
-		return nil, ErrForbidden
-	}
-	return &post, nil
 }

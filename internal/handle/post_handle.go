@@ -68,8 +68,9 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 	}
 
 	userID := c.GetInt64("userID")
+	userRole := c.GetString("role")
 
-	err = h.postService.DeletePostService(postID, userID)
+	err = h.postService.DeletePostService(postID, userID, userRole)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
 		return
@@ -93,8 +94,9 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	}
 
 	userID := c.GetInt64("userID")
+	userRole := c.GetString("role")
 
-	err = h.postService.EditPostService(postID, req.Title, req.Content, userID)
+	err = h.postService.EditPostService(postID, req.Title, req.Content, userID, userRole)
 	if err != nil {
 		if err.Error() == "更新できませんでした" {
 			c.JSON(http.StatusNotFound, gin.H{"エラー": err.Error()})

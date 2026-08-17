@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -44,6 +45,7 @@ func (a *AuthHandle) LoginAPI(c *gin.Context) {
 	token, err := a.authService.Login(req.Username, req.Password)
 
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"エラー": err.Error()})
 		return
 	}
