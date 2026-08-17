@@ -3,6 +3,7 @@ package service
 import (
 	"time"
 
+	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -14,13 +15,14 @@ func NewJWTService(secret string) *JWTService {
 	return &JWTService{Secret: secret}
 }
 
-func (j *JWTService) GenerateToken(username string, userID int64) (string, error) {
-	claims := jwt.MapClaims{
-		"id":       userID,
-		"username": username,
-		"exp": time.Now().Add(
-			time.Hour * 24,
-		).Unix(),
+func (j *JWTService) GenerateToken(username string, userID int64, role string) (string, error) {
+	claims := model.Claims{
+		UserID:   userID,
+		Username: username,
+		Role:     role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
 	}
 
 	token := jwt.NewWithClaims(

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/Rashomon-code/myblog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -34,39 +35,39 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{}, func(t *jwt.Token) (any, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(t *jwt.Token) (any, error) {
 			return []byte(m.jwtService.Secret), nil
 		})
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "Token が無効でした。"})
+			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "無効な Token"})
 			c.Abort()
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
+		claims, ok := token.Claims.(*model.Claims)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "求められる Token ではありません。"})
 			c.Abort()
 			return
 		}
 
-		username, ok := claims["username"].(string)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ユーザーが見つかりませんでした。"})
-			c.Abort()
-			return
-		}
+		//戻す際数字はデフォルトのfloat (jwt.MapClaims{} を使用する場合)
+		// userid, ok := claims["id"].(float64)
+		// if !ok {
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ログイン中にエラーが起きました。"})
+		// 	c.Abort()
+		// 	return
+		// }
+		// username, ok := claims["username"].(string)
+		// if !ok {
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ユーザーが見つかりませんでした。"})
+		// 	c.Abort()
+		// 	return
+		// }
 
-		//戻す際数字はデフォルトのfloat
-		userid, ok := claims["id"].(float64)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ログイン中にエラーが起きました。"})
-			c.Abort()
-			return
-		}
-
-		c.Set("userID", int64(userid))
-		c.Set("username", username)
+		c.Set("userID", claims.UserID)
+		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
