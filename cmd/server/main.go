@@ -17,7 +17,7 @@ func main() {
 
 	secret := os.Getenv("JWT_SECRET")
 
-	db, err := repository.InitSQL()
+	db, err := repository.InitAPP()
 	if err != nil {
 		log.Fatalln("データベース初期化失敗:", err)
 	}

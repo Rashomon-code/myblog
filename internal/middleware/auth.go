@@ -71,3 +71,23 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func (m *Middleware) RequireRole(requiredRole string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleVal, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "認証情報が見つかりません。"})
+			c.Abort()
+			return
+		}
+
+		role, ok := roleVal.(string)
+		if !ok || role != requiredRole {
+			c.JSON(http.StatusForbidden, gin.H{"エラー": "アクセス権限がありません。"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

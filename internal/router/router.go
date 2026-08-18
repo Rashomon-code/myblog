@@ -55,6 +55,13 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me/posts", userHandle.MyPageAPI)
 		}
+
+		admin := api.Group("/admin")
+		admin.Use(mw.AuthMiddleware())
+		admin.Use(mw.RequireRole("admin"))
+		{
+			admin.PUT("/users/:id/role")
+		}
 	}
 
 	return r
