@@ -84,3 +84,21 @@ func (r *UserRepository) GetAllUsers() ([]model.UserResponse, error) {
 
 	return users, nil
 }
+
+func (r *UserRepository) UpdateUserProfile(userID int64, display_name, bio string) error {
+	updateSQL := `UPDATE user_profiles SET display_name = $1, bio = $2 WHERE user_id = $3`
+
+	result, err := r.db.Exec(updateSQL, display_name, bio, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("更新できませんでした")
+	}
+	return nil
+}

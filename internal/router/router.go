@@ -58,6 +58,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me/posts", userHandle.MyPageAPI)
+			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
 		}
 
 		admin := api.Group("/admin")

@@ -71,6 +71,33 @@ func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
 }
 
+func (h *UserHandle) UpdateProfileAPI(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		return
+	}
+	userID := userIDVal.(int64)
+
+	var profile model.ProfileRequest
+	if err := c.ShouldBindJSON(&profile); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.userService.UpdateProfileService(userID, profile.DisplayName, profile.Bio)
+	if err != nil {
+		if err.Error() == "更新できませんでした" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新できませんでした: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+}
+
 func (h *UserHandle) GetAllUsersAPI(c *gin.Context) {
 	users, err := h.userService.GetAllUsersService()
 	if err != nil {
