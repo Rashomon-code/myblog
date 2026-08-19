@@ -67,12 +67,16 @@ function goPost() {
 }
 
 function goMypage() {
-    location.href = "/mypage"
+    location.href = "/mypage";
 }
 
 function logout() {
     localStorage.removeItem("token");
     location.reload();
+}
+
+function goAdmin(){
+    location.href = "/admin/users";
 }
 
 const token = localStorage.getItem("token");
@@ -81,12 +85,23 @@ if (token) {
 
     document.getElementById("status").textContent = "お帰りなさい";
 
-    document.getElementById("menu").innerHTML = `
+    let menuHTML = `
         <button onclick="goPost()">Create Post</button>
         <button onclick="goMypage()">My Page</button>
         <button onclick="logout()">Logout</button>
     `;
+    try {
+        const payloadBase64 = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payloadBase64));
 
+        if (decodedPayload.role === "admin") {
+            menuHTML += `<button onclick="goAdmin()">Admin Menu</button>`;
+        }
+    } catch (e) {
+        console.error("Token 解析失敗", e);
+    }
+
+    document.getElementById("menu").innerHTML = menuHTML;
 }
 
 async function loadPosts() {

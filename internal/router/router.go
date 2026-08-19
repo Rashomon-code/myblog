@@ -36,6 +36,10 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		ctx.File("templates/edit.html")
 	})
 
+	r.GET("/admin/users", func(ctx *gin.Context) {
+		ctx.File("templates/admin_users.html")
+	})
+
 	api := r.Group("/api")
 	{
 		api.GET("/posts", postHandle.PostListAPI)
@@ -54,6 +58,14 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me/posts", userHandle.MyPageAPI)
+		}
+
+		admin := api.Group("/admin")
+		admin.Use(mw.AuthMiddleware())
+		admin.Use(mw.RequireRole("admin"))
+		{
+			admin.GET("/users", userHandle.GetAllUsersAPI)
+			admin.PUT("/users/:id/role", userHandle.UpdateRoleAPI)
 		}
 	}
 

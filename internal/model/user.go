@@ -10,3 +10,20 @@ type UserProfile struct {
 	DisplayName string `json:"display_name"`
 	Bio         string `json:"bio"`
 }
+
+type User struct {
+	ID           int64  `json:"id" db:"id"`
+	Username     string `json:"username" db:"username"`
+	PasswordHash string `json:"-" db:"password_hash"`
+	Role         string `json:"role" db:"role"`
+}
+
+type UpdateRoleRequest struct {
+	Role string
+}
+
+type UserResponse struct {
+	ID       int64  `json:"id" db:"id"`
+	Username string `json:"username" db:"username"`
+	Role     string `json:"role" db:"role"`
+}

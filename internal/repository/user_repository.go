@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -37,4 +38,49 @@ func (r *UserRepository) GetUserProfile(userID int64) (*model.UserProfile, error
 	}
 
 	return &userProfile, nil
+}
+
+func (r *UserRepository) UpdateRole(userID int64, newRole string) error {
+	updateSQL := `UPDATE users SET role = $1 WHERE id = $2`
+	result, err := r.db.Exec(updateSQL, newRole, userID)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("ユーザーが見つかりませんでした。")
+	}
+
+	return nil
+}
+
+func (r *UserRepository) GetAllUsers() ([]model.UserResponse, error) {
+	selectSQL := `SELECT id, username, role FROM users ORDER BY id ASC`
+
+	rows, err := r.db.Query(selectSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.UserResponse
+	for rows.Next() {
+		var user model.UserResponse
+		err := rows.Scan(&user.ID, &user.Username, &user.Role)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if users == nil {
+		users = []model.UserResponse{}
+	}
+
+	return users, nil
 }

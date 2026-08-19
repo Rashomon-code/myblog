@@ -28,22 +28,17 @@ func (s *AuthService) Register(username, password string) error {
 }
 
 func (s *AuthService) Login(username, password string) (string, error) {
-	passwordHash, err := s.repo.GetPasswordHash(username)
-	if err != nil {
-		return "", err
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
 		return "", errors.New("入力に誤りがございます。")
 	}
 
-	userID, err := s.repo.FindByUsername(username)
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", err
+		return "", errors.New("入力に誤りがございます。")
 	}
 
-	token, err := s.jwt.GenerateToken(username, userID)
+	token, err := s.jwt.GenerateToken(username, user.ID, user.Role)
 	if err != nil {
 		return "", err
 	}

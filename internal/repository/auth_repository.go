@@ -2,8 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+
+	"github.com/Rashomon-code/myblog/internal/model"
 )
 
 type AuthRepository struct {
@@ -12,23 +13,6 @@ type AuthRepository struct {
 
 func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{db: db}
-}
-
-func (r *AuthRepository) GetPasswordHash(username string) (string, error) {
-	selectSQL := `SELECT password_hash FROM users WHERE username = $1`
-
-	var passwordHash string
-
-	row := r.db.QueryRow(selectSQL, username)
-	err := row.Scan(&passwordHash)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", errors.New("入力に誤りがございます。")
-		}
-
-		return "", fmt.Errorf("予期せぬエラーが起きました: %w", err)
-	}
-	return passwordHash, nil
 }
 
 func (r *AuthRepository) CreateUser(username, passwordHash string) error {
@@ -45,16 +29,19 @@ func (r *AuthRepository) CreateUser(username, passwordHash string) error {
 	return nil
 }
 
-func (r *AuthRepository) FindByUsername(username string) (int64, error) {
-	selectSQL := `SELECT id FROM users WHERE username = $1`
+func (r *AuthRepository) GetUserByUsername(username string) (*model.User, error) {
+	var user model.User
+	selectSQL := `SELECT id, username, password_hash, role FROM users WHERE username = $1`
 
-	var userID int64
-
-	row := r.db.QueryRow(selectSQL, username)
-	err := row.Scan(&userID)
+	err := r.db.QueryRow(selectSQL, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.PasswordHash,
+		&user.Role,
+	)
 	if err != nil {
-		return 0, fmt.Errorf("ユーザーデータが獲得できませんでした: %w", err)
+		return nil, err
 	}
 
-	return userID, nil
+	return &user, nil
 }
