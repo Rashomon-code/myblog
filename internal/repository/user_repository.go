@@ -85,10 +85,18 @@ func (r *UserRepository) GetAllUsers() ([]model.UserResponse, error) {
 	return users, nil
 }
 
-func (r *UserRepository) UpdateUserProfile(userID int64, display_name, bio string) error {
-	updateSQL := `UPDATE user_profiles SET display_name = $1, bio = $2 WHERE user_id = $3`
+func (r *UserRepository) UpdateUserProfile(userID int64, displayName, bio string) error {
+	updateSQL := `
+		INSERT INTO user_profiles (user_id, display_name, bio)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id)
+		DO UPDATE SET
+			display_name = EXCLUDED.display_name,
+			bio = EXCLUDED.bio
+	`
+	//INSERT で衝突した際、データは一時的に EXCLUDED に移動されます
 
-	result, err := r.db.Exec(updateSQL, display_name, bio, userID)
+	result, err := r.db.Exec(updateSQL, userID, displayName, bio)
 	if err != nil {
 		return err
 	}

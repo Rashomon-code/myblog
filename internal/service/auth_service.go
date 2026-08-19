@@ -23,7 +23,7 @@ func (s *AuthService) Register(username, password string) error {
 		return fmt.Errorf("登録できませんでした: %w", err)
 	}
 
-	err = s.repo.CreateUser(username, string(passwordHash))
+	err = s.repo.CreateUserWithProfile(username, string(passwordHash))
 	return err
 }
 
