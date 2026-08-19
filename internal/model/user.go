@@ -21,3 +21,9 @@ type User struct {
 type UpdateRoleRequest struct {
 	Role string
 }
+
+type UserResponse struct {
+	ID       int64  `json:"id" db:"id"`
+	Username string `json:"username" db:"username"`
+	Role     string `json:"role" db:"role"`
+}

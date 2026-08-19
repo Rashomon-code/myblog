@@ -51,7 +51,7 @@ func (h *UserHandle) MyPageAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, userPage)
 }
 
-func (h *UserHandle) RoleAPI(c *gin.Context) {
+func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {
 	targetUserID, _ := strconv.ParseInt(c.Param("id"), 10, 64) // URL から id を引き出す
 	currentUserID := c.GetInt64("userID")                      // JWT から id を引き出す
 
@@ -69,4 +69,14 @@ func (h *UserHandle) RoleAPI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+}
+
+func (h *UserHandle) GetAllUsersAPI(c *gin.Context) {
+	users, err := h.userService.GetAllUsersService()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザーデータが取得できませんでした"})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
 }

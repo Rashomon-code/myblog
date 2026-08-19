@@ -54,3 +54,33 @@ func (r *UserRepository) UpdateRole(userID int64, newRole string) error {
 
 	return nil
 }
+
+func (r *UserRepository) GetAllUsers() ([]model.UserResponse, error) {
+	selectSQL := `SELECT id, username, role FROM users ORDER BY id ASC`
+
+	rows, err := r.db.Query(selectSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.UserResponse
+	for rows.Next() {
+		var user model.UserResponse
+		err := rows.Scan(&user.ID, &user.Username, &user.Role)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if users == nil {
+		users = []model.UserResponse{}
+	}
+
+	return users, nil
+}
