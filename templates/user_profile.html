@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile - My Blog</title>
+
+    <style>
+        body {
+            width: 500px;
+            margin: 40px auto;
+            font-family: sans-serif;
+        }
+
+        .post-list {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>User Profile</h1>
+
+<div id="content">
+    読み込み中...
+</div>
+
+<div>
+    <button onclick="goHome()">Home</button>
+</div>
+
+<script>
+
+function goHome() {
+    location.href = "/";
+}
+
+const userID = location.pathname.split("/").pop();
+
+fetch(`/api/users/${userID}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("ユーザー情報を取得できませんでした");
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        const profile = data.userprofile;
+        const posts = data.posts;
+
+        let postsHtml = '';
+
+        if (!posts || posts.length === 0) {
+            postsHtml = '<p>まだ投稿はありません。</p>';
+        } else {
+            postsHtml = '<ul>';
+
+            posts.forEach(post => {
+                postsHtml += `
+                    <li>
+                        <a href="/posts/${post.id}">
+                            <strong>${post.title}</strong>
+                        </a>
+                        <p>${post.created_at}</p>
+                    </li>
+                `;
+            });
+
+            postsHtml += '</ul>';
+        }
+
+        document.getElementById("content").innerHTML = `
+            <div style="
+                background: #f9f9f9;
+                padding: 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+            ">
+                <p>
+                    <strong>名前：</strong>
+                    ${profile.display_name}
+                </p>
+
+                <p>
+                    <strong>Bio：</strong>
+                    ${profile.bio}
+                </p>
+
+                <p>
+                    <strong>使用者 ID：</strong>
+                    ${profile.user_id}
+                </p>
+            </div>
+
+            <div class="post-list">
+                <h3>投稿</h3>
+                ${postsHtml}
+            </div>
+        `;
+    })
+    .catch(error => {
+        document.getElementById("content").textContent =
+            error.message;
+    });
+
+</script>
+
+</body>
+</html>

@@ -24,8 +24,13 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 	r.GET("/create", func(ctx *gin.Context) {
 		ctx.File("templates/post.html")
 	})
+
 	r.GET("/mypage", func(ctx *gin.Context) {
 		ctx.File("templates/mypage.html")
+	})
+
+	r.GET("/users/:id", func(ctx *gin.Context) {
+		ctx.File("templates/user_profile.html")
 	})
 
 	r.GET("/posts/:id", func(ctx *gin.Context) {
@@ -44,6 +49,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 	{
 		api.GET("/posts", postHandle.PostListAPI)
 		api.GET("/posts/:id", postHandle.PostDetailAPI)
+		api.GET("/users/:id", userHandle.UserProfileAPI)
 
 		auth := api.Group("/auth")
 		{
