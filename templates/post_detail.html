@@ -85,9 +85,17 @@ async function fetchPostDetail() {
 
         const resData = await response.json();
         const post = resData.post;
+        const date = new Date(post.created_at);
 
         document.getElementById("title").textContent = post.title;
-        document.getElementById("created_at").textContent = post.created_at;
+        document.getElementById("created_at").textContent = 
+            date.toLocaleDateString("ja-JP", {
+                year:"numeric",
+                month:"2-digit",
+                day:"2-digit",
+                hour:"2-digit",
+                minute:"2-digit"
+            });
         document.getElementById("content").textContent = post.content;
 
         if (token) {
