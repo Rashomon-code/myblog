@@ -20,3 +20,12 @@ type ArticleSummary struct {
 	Title     string    `json:"title" db:"title"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
+
+type PostDetail struct {
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Content     string    `json:"content"`
+	UserID      int64     `json:"user_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	DisplayName *string   `json:"display_name"` //LEFT JOIN で DisplayName が存在しない場合 nil になるため pointer を用いる
+}

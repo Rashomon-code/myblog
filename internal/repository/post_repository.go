@@ -41,14 +41,19 @@ func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary,
 	return scanArticleSummaries(rows)
 }
 
-func (r *PostRepository) GetPostDetail(postID int64) (model.Post, error) {
-	selectSQL := `SELECT id, title, content, user_id, created_at FROM posts WHERE id = $1`
+func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
+	selectSQL := `
+		SELECT p.id, p.title, p.content, p.user_id, p.created_at, up.display_name
+		FROM posts p
+		LEFT JOIN user_profiles up ON p.user_id = up.user_id
+		WHERE p.id = $1
+	`
 
-	var p model.Post
+	var p model.PostDetail
 	row := r.db.QueryRow(selectSQL, postID)
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.UserID, &p.CreatedAt)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.UserID, &p.CreatedAt, &p.DisplayName)
 	if err != nil {
-		return model.Post{}, fmt.Errorf("文章が読み取れませんでした: %w", err)
+		return model.PostDetail{}, fmt.Errorf("文章が読み取れませんでした: %w", err)
 	}
 
 	return p, nil
