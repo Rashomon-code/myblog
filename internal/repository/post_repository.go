@@ -74,9 +74,9 @@ func (r *PostRepository) DeletePost(postID int64) error {
 }
 
 func (r *PostRepository) EditPost(postID int64, title string, content string) error {
-	editSQL := `UPDATE posts SET title = $1, content = $2 WHERE id = $3`
+	updateSQL := `UPDATE posts SET title = $1, content = $2 WHERE id = $3`
 
-	result, err := r.db.Exec(editSQL, title, content, postID)
+	result, err := r.db.Exec(updateSQL, title, content, postID)
 	if err != nil {
 		return err
 	}

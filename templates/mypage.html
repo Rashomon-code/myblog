@@ -49,6 +49,56 @@ function logout() {
     location.href = "/";
 }
 
+function editProfile() {
+    const displayName = document.getElementById("displayName").textContent;
+    const bio = document.getElementById("bio").textContent;
+
+    document.getElementById("displayName").innerHTML = `
+        <input id="displayNameInput" value="${displayName}">
+    `;
+
+    document.getElementById("bio").innerHTML = `
+        <textarea id="bioInput">${bio}</textarea>
+    `;
+
+    document.querySelector(
+        'button[onclick="editProfile()"]'
+    ).outerHTML = `
+        <button onclick="updateProfile()">保存</button>
+        <button onclick="location.reload()">キャンセル</button>
+    `;
+}
+
+async function updateProfile() {
+    const displayName =
+        document.getElementById("displayNameInput").value;
+
+    const bio =
+        document.getElementById("bioInput").value;
+
+    const response = await fetch("/api/me/profile", {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            display_name: displayName,
+            bio: bio
+        })
+    });
+
+    if (!response.ok) {
+        const data = await response.json();
+        alert(data.error);
+        return;
+    }
+
+    alert("更新しました");
+
+    location.reload();
+}
+
 const token = localStorage.getItem("token");
 
 if (!token) {
@@ -86,8 +136,16 @@ if (!token) {
 
         document.getElementById("content").innerHTML = `
             <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <p><strong>Hello</strong> ${profile.display_name}</p>
-                <p><strong>Bio：</strong> ${profile.bio}</p>
+                <p>
+                    <strong>Hello</strong>
+                    <span id="displayName">${profile.display_name}</span>
+                </p>
+                <p>
+                    <strong>Bio：</strong>
+                    <span id="bio">${profile.bio}</span>
+                </p>
+
+                <button onclick="editProfile()">プロフィールを編集</button>
             </div>
 
             <p>使用者 ID: ${profile.user_id}</p>

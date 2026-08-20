@@ -27,3 +27,8 @@ type UserResponse struct {
 	Username string `json:"username" db:"username"`
 	Role     string `json:"role" db:"role"`
 }
+
+type ProfileRequest struct {
+	DisplayName string `json:"display_name"`
+	Bio         string `json:"bio"`
+}

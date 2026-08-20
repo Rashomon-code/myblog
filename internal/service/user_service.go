@@ -34,3 +34,7 @@ func (s *UserService) UpdateRoleService(operatorID, userID int64, newRole string
 func (s *UserService) GetAllUsersService() ([]model.UserResponse, error) {
 	return s.repo.GetAllUsers()
 }
+
+func (s *UserService) UpdateProfileService(userID int64, displayName, bio string) error {
+	return s.repo.UpdateUserProfile(userID, displayName, bio)
+}

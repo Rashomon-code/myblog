@@ -15,16 +15,40 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{db: db}
 }
 
-func (r *AuthRepository) CreateUser(username, passwordHash string) error {
+func (r *AuthRepository) CreateUserWithProfile(username, passwordHash string) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	insertSQL := `
 		INSERT INTO users (username, password_hash)
 		VALUES ($1, $2)
+		RETURNING id
 	`
 
-	_, err := r.db.Exec(insertSQL, username, passwordHash)
+	var userID int64
+	err = tx.QueryRow(insertSQL, username, passwordHash).Scan(&userID)
 	if err != nil {
 		return fmt.Errorf("登録にエラーが起きました: %w", err)
 	}
+
+	insertProfileSQL := `
+		INSERT INTO user_profiles (user_id, display_name, bio)
+		VALUES ($1, $2, $3)
+	`
+	defaultName := fmt.Sprintf("ユーザー %d", userID)
+	_, err = tx.Exec(insertProfileSQL, userID, defaultName, "")
+	if err != nil {
+		return fmt.Errorf("プロフィール設定できませんでした: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("登録完了しました。")
 	return nil
 }
