@@ -77,7 +77,7 @@ func (h *UserHandle) UserProfileAPI(c *gin.Context) {
 	if userID == ID {
 		c.JSON(http.StatusOK, gin.H{
 			"is_me":        true,
-			"redirect_url": "/api/me",
+			"redirect_url": "/mypage",
 		})
 		return
 	}

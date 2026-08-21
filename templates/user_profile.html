@@ -112,7 +112,7 @@ fetch(`/api/opt/users/${userID}`,{
                 ${postsHtml}
             </div>
         `;
-    })
+    }) //XSS 攻撃を受ける可能性があります。
     .catch(error => {
         document.getElementById("content").textContent =
             error.message;
