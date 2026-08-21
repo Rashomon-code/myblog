@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -49,6 +50,60 @@ func (h *UserHandle) MyPageAPI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, userPage)
+}
+
+func (h *UserHandle) UserProfileAPI(c *gin.Context) {
+	ID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		return
+	}
+
+	var userID int64
+	userIDVal, exists := c.Get("userID")
+
+	if exists {
+		switch v := userIDVal.(type) {
+		case int64:
+			userID = v
+		case float64:
+			userID = int64(v)
+		case int:
+			userID = int64(v)
+		}
+	}
+
+	fmt.Println(userIDVal, userID, ID)
+	if userID == ID {
+		c.JSON(http.StatusOK, gin.H{
+			"is_me":        true,
+			"redirect_url": "/mypage",
+		})
+		return
+	}
+
+	posts, err := h.postService.GetPostTitle(ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ポスト獲得できませんでした"})
+		log.Printf("Bind error: %v", err)
+		return
+	}
+
+	user, err := h.userService.GetProfileService(ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザー情報が獲得できませんでした"})
+		return
+	}
+
+	userPage := model.MyPageResponse{
+		UserProfile: *user,
+		Posts:       posts,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"is_me": false,
+		"data":  userPage,
+	})
 }
 
 func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {

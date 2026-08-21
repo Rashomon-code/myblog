@@ -91,3 +91,30 @@ func (m *Middleware) RequireRole(requiredRole string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func (m *Middleware) OptionalAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString := parts[1]
+			token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(t *jwt.Token) (any, error) {
+				return []byte(m.jwtService.Secret), nil
+			})
+
+			if err == nil && token.Valid {
+				if claims, ok := token.Claims.(*model.Claims); ok {
+					c.Set("userID", claims.UserID)
+					c.Set("username", claims.Username)
+					c.Set("role", claims.Role)
+				}
+			}
+		}
+		c.Next()
+	}
+}

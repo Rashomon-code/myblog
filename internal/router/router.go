@@ -24,8 +24,13 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 	r.GET("/create", func(ctx *gin.Context) {
 		ctx.File("templates/post.html")
 	})
+
 	r.GET("/mypage", func(ctx *gin.Context) {
 		ctx.File("templates/mypage.html")
+	})
+
+	r.GET("/users/:id", func(ctx *gin.Context) {
+		ctx.File("templates/user_profile.html")
 	})
 
 	r.GET("/posts/:id", func(ctx *gin.Context) {
@@ -51,13 +56,19 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			auth.POST("/login", authHandle.LoginAPI)
 		}
 
+		opt := api.Group("/opt")
+		opt.Use(mw.OptionalAuthMiddleware())
+		{
+			opt.GET("/users/:id", userHandle.UserProfileAPI)
+		}
+
 		protected := api.Group("")
 		protected.Use(mw.AuthMiddleware())
 		{
 			protected.POST("/posts", postHandle.CreatePostAPI)
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
-			protected.GET("/me/posts", userHandle.MyPageAPI)
+			protected.GET("/me", userHandle.MyPageAPI)
 			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
 		}
 
