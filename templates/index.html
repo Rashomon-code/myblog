@@ -17,7 +17,19 @@
         }
 
         #menu {
-            margin-bottom: 35px;
+            margin-bottom: 25px;
+        }
+
+        #search-box {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        #search-box input {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 14px;
         }
 
         .post-card {
@@ -47,42 +59,38 @@
     <button onclick="goRegister()">Register</button>
 </div>
 
-<h2 class="section-title">最新記事</h2>
+<div id="search-box">
+    <input type="text" id="searchInput" placeholder="記事のタイトルを検索..." onkeypress="handleKeyPress(event)">
+    <button onclick="searchPosts()">検索</button>
+</div>
+
+<h2 class="section-title" id="section-title">最新記事</h2>
 <div id="posts-container">
     <p>ロード中</p>
 </div>
 
 <script>
 
-function goLogin() {
-    location.href = "/login";
-}
+function goLogin() { location.href = "/login"; }
+function goRegister() { location.href = "/register"; }
+function goPost() { location.href = "/create"; }
+function goMypage() { location.href = "/mypage"; }
+function logout() { localStorage.removeItem("token"); location.reload(); }
+function goAdmin(){ location.href = "/admin/users"; }
 
-function goRegister() {
-    location.href = "/register";
-}
-
-function goPost() {
-    location.href = "/create";
-}
-
-function goMypage() {
-    location.href = "/mypage";
-}
-
-function logout() {
-    localStorage.removeItem("token");
-    location.reload();
-}
-
-function goAdmin(){
-    location.href = "/admin/users";
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 const token = localStorage.getItem("token");
 
 if (token) {
-
     document.getElementById("status").textContent = "お帰りなさい";
 
     let menuHTML = `
@@ -104,14 +112,14 @@ if (token) {
     document.getElementById("menu").innerHTML = menuHTML;
 }
 
-async function loadPosts() {
+function renderPosts(posts) {
     const container = document.getElementById("posts-container");
-
-    const response = await fetch('/api/posts');
-    const data = await response.json();
-    const posts = data.posts;
-
     container.innerHTML = "";
+
+    if (!posts || posts.length === 0) {
+        container.innerHTML = "<p>該当する記事が見つかりませんでした。</p>";
+        return;
+    }
 
     posts.forEach(post => {
         const postElement = document.createElement("article");
@@ -119,12 +127,53 @@ async function loadPosts() {
 
         postElement.innerHTML = `
             <h3>
-                <a href="/posts/${post.id}">${post.title}</a>
+                <a href="/posts/${escapeHTML(post.id)}">${escapeHTML(post.title)}</a>
             </h3>
         `;
 
         container.appendChild(postElement);
     });
+}
+
+async function loadPosts() {
+    try {
+        const response = await fetch('/api/posts');
+        const data = await response.json();
+        renderPosts(data.posts || []);
+    } catch (e) {
+        document.getElementById("posts-container").textContent = "記事の取得に失敗しました。";
+    }
+}
+
+async function searchPosts() {
+    const query = document.getElementById("searchInput").value.trim();
+    const sectionTitle = document.getElementById("section-title");
+
+    if (!query) {
+        sectionTitle.textContent = "最新記事";
+        loadPosts();
+        return;
+    }
+
+    sectionTitle.textContent = `「${escapeHTML(query)}」の検索結果`;
+    document.getElementById("posts-container").innerHTML = "<p>検索中...</p>";
+
+    try {
+        const response = await fetch(`/api/posts/search?keyword=${encodeURIComponent(query)}`);
+        
+        if (!response.ok) throw new Error("検索エラー");
+
+        const posts = await response.json();
+        renderPosts(posts);
+    } catch (e) {
+        document.getElementById("posts-container").textContent = "検索処理に失敗しました。";
+    }
+}
+
+function handleKeyPress(event) {
+    if (event.key === "Enter") {
+        searchPosts();
+    }
 }
 
 loadPosts();

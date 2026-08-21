@@ -49,6 +49,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 	{
 		api.GET("/posts", postHandle.PostListAPI)
 		api.GET("/posts/:id", postHandle.PostDetailAPI)
+		api.GET("/posts/search", postHandle.SearchPostAPI)
 
 		auth := api.Group("/auth")
 		{
