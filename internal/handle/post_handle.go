@@ -21,20 +21,20 @@ func NewPostHandle(s *service.PostService) *PostHandle {
 func (h *PostHandle) CreatePostAPI(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"エラー": "ユーザーが見つかりませんでした"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
 		return
 	}
 	userID := userIDVal.(int64)
 
 	var req model.UpdatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "入力に誤りがございます: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "入力に誤りがございます: " + err.Error()})
 		return
 	}
 
 	err := h.postService.CreatePostService(userID, req.Title, req.Content)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -45,13 +45,13 @@ func (h *PostHandle) PostDetailAPI(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
 		return
 	}
 
 	post, err := h.postService.PostDetailService(postID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 
 	err = h.postService.DeletePostService(postID, userID, userRole)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -84,13 +84,13 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "IDが間違っています"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
 		return
 	}
 
 	var req model.UpdatePostRequest
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"エラー": "入力に誤りがございます"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "入力に誤りがございます"})
 		return
 	}
 
@@ -100,10 +100,10 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	err = h.postService.EditPostService(postID, req.Title, req.Content, userID, userRole)
 	if err != nil {
 		if err.Error() == "更新できませんでした" {
-			c.JSON(http.StatusNotFound, gin.H{"エラー": err.Error()})
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": "更新できませんでした: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新できませんでした: " + err.Error()})
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 func (h *PostHandle) PostListAPI(c *gin.Context) {
 	posts, err := h.postService.PostHomeService()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"エラー": "ポスト獲得できませんでした"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト獲得できませんでした"})
 		return
 	}
 

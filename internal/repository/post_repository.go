@@ -56,6 +56,11 @@ func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
 		return model.PostDetail{}, fmt.Errorf("文章が読み取れませんでした: %w", err)
 	}
 
+	if p.DisplayName == nil || *p.DisplayName == "" {
+		displayName := fmt.Sprintf("ユーザー%d", p.UserID)
+		p.DisplayName = &displayName
+	}
+
 	return p, nil
 }
 
