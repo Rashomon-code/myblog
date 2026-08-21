@@ -3,6 +3,7 @@ package handle
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/Rashomon-code/myblog/internal/service"
@@ -119,4 +120,26 @@ func (h *PostHandle) PostListAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"posts": posts,
 	})
+}
+
+func (h *PostHandle) SearchPostAPI(c *gin.Context) {
+	keyword := c.Query("keyword")
+	keyword = strings.TrimSpace(keyword)
+
+	if keyword == "" {
+		c.JSON(http.StatusOK, []model.ArticleSummary{})
+		return
+	}
+
+	posts, err := h.postService.SearchPostService(keyword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "検索処理に問題が起きました"})
+		return
+	}
+
+	if posts == nil {
+		posts = []model.ArticleSummary{}
+	}
+
+	c.JSON(http.StatusOK, posts)
 }

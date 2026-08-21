@@ -126,3 +126,15 @@ func (r *PostRepository) GetAllPost() ([]model.ArticleSummary, error) {
 
 	return scanArticleSummaries(rows)
 }
+
+func (r *PostRepository) SearchPost(keyword string) ([]model.ArticleSummary, error) {
+	selectSQL := `SELECT id, title, created_at FROM posts WHERE title LIKE '%' || $1 || '%' ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(selectSQL, keyword)
+	if err != nil {
+		return nil, err
+	}
+	posts, err := scanArticleSummaries(rows)
+
+	return posts, nil
+}

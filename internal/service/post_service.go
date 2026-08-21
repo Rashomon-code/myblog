@@ -69,3 +69,7 @@ func (s *PostService) EditPostService(postID int64, title string, content string
 func (s *PostService) PostHomeService() ([]model.ArticleSummary, error) {
 	return s.repo.GetAllPost()
 }
+
+func (s *PostService) SearchPostService(keyword string) ([]model.ArticleSummary, error) {
+	return s.repo.SearchPost(keyword)
+}

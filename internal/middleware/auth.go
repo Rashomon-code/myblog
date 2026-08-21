@@ -118,3 +118,5 @@ func (m *Middleware) OptionalAuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}) 学ぶ必要があります
