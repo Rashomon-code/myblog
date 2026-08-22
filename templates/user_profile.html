@@ -12,10 +12,25 @@
             font-family: sans-serif;
         }
 
+        button {
+            margin: 5px;
+        }
+
+        .profile-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
         .post-list {
             margin-top: 20px;
             border-top: 1px solid #ccc;
             padding-top: 10px;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -24,99 +39,171 @@
 
 <h1>User Profile</h1>
 
-<div id="content">
-    読み込み中...
+<p id="status">読み込み中...</p>
+
+<div id="content" class="hidden">
+
+    <div class="profile-card">
+        <p>
+            <strong>名前：</strong>
+            <span id="displayNameView"></span>
+        </p>
+
+        <p>
+            <strong>Bio：</strong>
+            <span id="bioView"></span>
+        </p>
+
+        <p>
+            <strong>使用者 ID：</strong>
+            <span id="userIdView"></span>
+        </p>
+
+        <button id="editProfileButton" class="hidden" onclick="location.href='/mypage'">
+            プロフィールを編集
+        </button>
+    </div>
+
+    <div class="post-list">
+        <h3>投稿</h3>
+        <ul id="postsContainer"></ul>
+
+        <div id="pagination">
+            <button id="btn-prev" onclick="changePage(-1)">前へ</button>
+            <span id="page-info">1 / 1 ページ</span>
+            <button id="btn-next" onclick="changePage(1)">次へ</button>
+        </div>
+    </div>
+
 </div>
 
-<div>
+<div id="menu">
     <button onclick="goHome()">Home</button>
 </div>
 
 <script>
 
+const token = localStorage.getItem("token");
+const userID = location.pathname.split("/").pop();
+
+function escapeHTML(str) {
+    if (!str) return '';
+
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function goHome() {
     location.href = "/";
 }
 
-const userID = location.pathname.split("/").pop();
-const token = localStorage.getItem("token")
+let currentPage = 1;
+const pageSize = 5;
+let totalPages = 1;
 
-fetch(`/api/opt/users/${userID}`,{
-	headers: {
-		'Authorization': 'Bearer ' + token
-	}
-})
-    .then(response => {
+async function loadUserProfile(page = 1) {
+
+    try {
+
+        const headers = {};
+
+        if (token) {
+            headers["Authorization"] = "Bearer " + token;
+        }
+
+        const response = await fetch(
+            `/api/opt/users/${encodeURIComponent(userID)}?page=${page}&page_size=${pageSize}`,
+            {
+                headers: headers
+            }
+        );
+
         if (!response.ok) {
             throw new Error("ユーザー情報を取得できませんでした");
         }
 
-        return response.json();
-    })
-    .then(res => {
-		if (res.is_me) {
-			location.href = res.redirect_url;
-			return;
-		}
-		
-		const data = res.data
-        const profile = data.userprofile;
-        const posts = data.posts;
+        const res = await response.json();
 
-        let postsHtml = '';
-
-        if (!posts || posts.length === 0) {
-            postsHtml = '<p>まだ投稿はありません。</p>';
-        } else {
-            postsHtml = '<ul>';
-
-            posts.forEach(post => {
-                postsHtml += `
-                    <li>
-                        <a href="/posts/${post.id}">
-                            <strong>${post.title}</strong>
-                        </a>
-                        <p>${post.created_at}</p>
-                    </li>
-                `;
-            });
-
-            postsHtml += '</ul>';
+        // 自分のページなら編集ボタンを表示
+        if (res.is_me) {
+            document
+                .getElementById("editProfileButton")
+                .classList.remove("hidden");
         }
 
-        document.getElementById("content").innerHTML = `
-            <div style="
-                background: #f9f9f9;
-                padding: 15px;
-                border-radius: 6px;
-                margin-bottom: 20px;
-            ">
-                <p>
-                    <strong>名前：</strong>
-                    ${profile.display_name}
-                </p>
+        const data = res.data;
+        const profile = data.userprofile;
+        const posts = data.posts || [];
 
-                <p>
-                    <strong>Bio：</strong>
-                    ${profile.bio}
-                </p>
+        // Profile
+        document.getElementById("displayNameView").textContent =
+            profile.display_name || '';
 
-                <p>
-                    <strong>使用者 ID：</strong>
-                    ${profile.user_id}
-                </p>
-            </div>
+        document.getElementById("bioView").textContent =
+            profile.bio || '';
 
-            <div class="post-list">
-                <h3>投稿</h3>
-                ${postsHtml}
-            </div>
-        `;
-    }) //XSS 攻撃を受ける可能性があります。
-    .catch(error => {
-        document.getElementById("content").textContent =
+        document.getElementById("userIdView").textContent =
+            profile.user_id || '';
+
+        // Posts
+        const postsContainer =
+            document.getElementById("postsContainer");
+
+        if (posts.length === 0) {
+
+            postsContainer.innerHTML =
+                "<li>まだ投稿はありません。</li>";
+
+        } else {
+
+            postsContainer.innerHTML = posts.map(post => `
+                <li>
+                    <a href="/posts/${encodeURIComponent(post.id)}">
+                        <strong>${escapeHTML(post.title)}</strong>
+                    </a>
+                    <p>${escapeHTML(post.created_at)}</p>
+                </li>
+            `).join('');
+
+        }
+
+        renderPagination(data.total_count, data.page);
+
+        document.getElementById("status").textContent =
+            "ユーザープロフィール";
+
+        document.getElementById("content").classList.remove("hidden");
+
+    } catch (error) {
+
+        document.getElementById("status").textContent =
             error.message;
-    });
+
+    }
+}
+
+function renderPagination(totalCount, page) {
+    totalPages = Math.ceil(totalCount / pageSize) || 1;
+    currentPage = page;
+
+    document.getElementById("page-info").textContent = `${currentPage} / ${totalPages} ページ`;
+    document.getElementById("btn-prev").disabled = (currentPage <= 1);
+    document.getElementById("btn-next").disabled = (currentPage >= totalPages);
+}
+
+function changePage(delta) {
+    const newPage = currentPage + delta;
+
+    if (newPage >= 1 && newPage <= totalPages) {
+        loadMyPosts(newPage);
+    }
+}
+
+loadUserProfile();
 
 </script>
 

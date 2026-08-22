@@ -119,7 +119,7 @@ if (token) {
 }
 
 let currentPage = 1;
-const pageSize = 5;
+const pageSize = 20;
 let totalPages = 1;
 
 function renderPosts(posts) {
@@ -145,7 +145,7 @@ function renderPosts(posts) {
     });
 }
 
-function renderPagintion(totalCount, page) {
+function renderPagination(totalCount, page) {
     totalPages = Math.ceil(totalCount / pageSize) || 1;
     currentPage = page;
 
@@ -159,7 +159,7 @@ async function loadPosts(page = 1) {
         const response = await fetch(`/api/posts?page=${page}&page_size=${pageSize}`);
         const data = await response.json();
         renderPosts(data.posts || []);
-        renderPagintion(data.total_count, data.page);
+        renderPagination(data.total_count, data.page);
     } catch (e) {
         document.getElementById("posts-container").textContent = "記事の取得に失敗しました。";
     }

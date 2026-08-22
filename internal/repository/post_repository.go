@@ -29,15 +29,33 @@ func (r *PostRepository) CreatePost(userID int64, title string, content string) 
 	return nil
 }
 
-func (r *PostRepository) GetTitleByUserID(userID int64) ([]model.ArticleSummary, error) {
-	selectSQL := `SELECT id, title, created_at FROM posts WHERE user_id = $1`
-
-	rows, err := r.db.Query(selectSQL, userID)
+func (r *PostRepository) GetTitleByUserID(userID int64, page, pageSize int) ([]model.ArticleSummary, int64, error) {
+	var totalCount int64
+	countSQL := `SELECT COUNT(*) FROM posts WHERE user_id = $1`
+	err := r.db.QueryRow(countSQL, userID).Scan(&totalCount)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return scanArticleSummaries(rows)
+	offset := (page - 1) * pageSize
+
+	selectSQL := `
+		SELECT id, title, created_at
+		FROM posts
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.Query(selectSQL, userID, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	posts, err := scanArticleSummaries(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+	return posts, totalCount, nil
 }
 
 func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {

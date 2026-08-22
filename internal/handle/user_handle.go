@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -31,12 +30,6 @@ func (h *UserHandle) MyPageAPI(c *gin.Context) {
 	}
 
 	userID := userIDVal.(int64)
-	posts, err := h.postService.GetPostTitle(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ポスト獲得できませんでした"})
-		log.Printf("Bind error: %v", err)
-		return
-	}
 
 	user, err := h.userService.GetProfileService(userID)
 	if err != nil {
@@ -44,12 +37,7 @@ func (h *UserHandle) MyPageAPI(c *gin.Context) {
 		return
 	}
 
-	userPage := model.MyPageResponse{
-		UserProfile: *user,
-		Posts:       posts,
-	}
-
-	c.JSON(http.StatusOK, userPage)
+	c.JSON(http.StatusOK, user)
 }
 
 func (h *UserHandle) UserProfileAPI(c *gin.Context) {
@@ -73,16 +61,19 @@ func (h *UserHandle) UserProfileAPI(c *gin.Context) {
 		}
 	}
 
-	fmt.Println(userIDVal, userID, ID)
-	if userID == ID {
-		c.JSON(http.StatusOK, gin.H{
-			"is_me":        true,
-			"redirect_url": "/mypage",
-		})
-		return
+	isMe := userID != 0 && userID == ID
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page < 1 {
+		page = 1
 	}
 
-	posts, err := h.postService.GetPostTitle(ID)
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+
+	posts, totalCount, err := h.postService.GetPostTitle(ID, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ポスト獲得できませんでした"})
 		log.Printf("Bind error: %v", err)
@@ -95,15 +86,20 @@ func (h *UserHandle) UserProfileAPI(c *gin.Context) {
 		return
 	}
 
-	userPage := model.MyPageResponse{
-		UserProfile: *user,
-		Posts:       posts,
+	userPage := model.PageResult{
+		Posts:      posts,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"is_me": false,
-		"data":  userPage,
-	})
+	var response model.UserProfileResponse
+
+	response.IsMe = isMe
+	response.Data.UserProfile = *user
+	response.Data.PageResult = userPage
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {

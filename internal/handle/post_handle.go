@@ -156,3 +156,35 @@ func (h *PostHandle) SearchPostAPI(c *gin.Context) {
 
 	c.JSON(http.StatusOK, posts)
 }
+
+func (h *PostHandle) UserPostsAPI(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		return
+	}
+	userID := userIDVal.(int64)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
+	if err != nil {
+		pageSize = 10
+	}
+
+	posts, totalCount, err := h.postService.GetPostTitle(userID, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.PageResult{
+		Posts:      posts,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+	})
+}

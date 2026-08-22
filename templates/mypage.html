@@ -40,6 +40,12 @@
     <div class="post-list">
         <h3>あなたの投稿</h3>
         <ul id="postsContainer"></ul>
+
+        <div id="pagination">
+            <button id="btn-prev" onclick="changePage(-1)">前へ</button>
+            <span id="page-info">1 / 1 ページ</span>
+            <button id="btn-next" onclick="changePage(1)">次へ</button>
+        </div>
     </div>
 </div>
 
@@ -107,6 +113,65 @@ async function updateProfile() {
     }
 }
 
+let currentPage = 1;
+const pageSize = 5;
+let totalPages = 1;
+
+async function loadMyPosts(page = 1) {
+    try {
+        const response = await fetch(
+            `/api/me/posts?page=${page}&page_size=${pageSize}`,
+            {
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("記事の取得に失敗しました");
+        }
+
+        const data = await response.json();
+        const posts = data.posts || [];
+        const postsContainer = document.getElementById("postsContainer");
+
+        if (posts.length === 0){
+            postsContainer.innerHTML = '<li>まだ投稿はありません。</li>';
+        } else {
+            postsContainer.innerHTML = posts.map(post => `
+                <li>
+                    <a href="/posts/${escapeHTML(post.id)}">
+                        <strong>${escapeHTML(post.title)}</strong>
+                    </a>
+                    <p>${escapeHTML(post.created_at)}</p>
+                </li>
+            `).join('');
+        }
+
+        renderPagination(data.total_count, data.page)
+    } catch (e) {
+        alert(e.message)
+    }
+}
+
+function renderPagination(totalCount, page) {
+    totalPages = Math.ceil(totalCount / pageSize) || 1;
+    currentPage = page;
+
+    document.getElementById("page-info").textContent = `${currentPage} / ${totalPages} ページ`;
+    document.getElementById("btn-prev").disabled = (currentPage <= 1);
+    document.getElementById("btn-next").disabled = (currentPage >= totalPages);
+}
+
+function changePage(delta) {
+    const newPage = currentPage + delta;
+
+    if (newPage >= 1 && newPage <= totalPages) {
+        loadMyPosts(newPage);
+    }
+}
+
 async function initMyPage() {
     if (!token) {
         location.href = "/login";
@@ -120,30 +185,16 @@ async function initMyPage() {
 
         if (!response.ok) throw new Error("データ取得できませんでした");
 
-        const data = await response.json();
-        const profile = data.userprofile || {};
-        const posts = data.posts || [];
+        const profile = await response.json();
 
         document.getElementById("displayNameView").textContent = profile.display_name || '';
         document.getElementById("bioView").textContent = profile.bio || '';
         document.getElementById("userIdView").textContent = profile.user_id || '';
 
-        const postsContainer = document.getElementById("postsContainer");
-        if (posts.length === 0) {
-            postsContainer.innerHTML = '<li>まだ投稿はありません。</li>';
-        } else {
-            postsContainer.innerHTML = posts.map(post => `
-                <li>
-                    <a href="/posts/${escapeHTML(post.id)}">
-                        <strong>${escapeHTML(post.title)}</strong>
-                    </a>
-                    <p>${escapeHTML(post.created_at)}</p>
-                </li>
-            `).join('');
-        }
-
         document.getElementById("status").textContent = "マイページ";
         document.getElementById("content").classList.remove("hidden");
+
+        loadMyPosts(1)
     } catch (e) {
         alert(e.message);
         logout();
