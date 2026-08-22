@@ -4,44 +4,61 @@
 <head>
     <meta charset="UTF-8">
     <title>My Page - My Blog</title>
-
     <style>
-        body {
-            width: 500px;
-            margin: 40px auto;
-            font-family: sans-serif;
-        }
-
-        button {
-            margin: 5px;
-        }
-
-        .post-list {
-            margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-        }
+        body { width: 500px; margin: 40px auto; font-family: sans-serif; }
+        button { margin: 5px; }
+        .profile-card { background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .post-list { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .hidden { display: none; }
+        input, textarea { width: 100%; box-sizing: border-box; margin-top: 5px; }
     </style>
 </head>
 
 <body>
 
 <h1>My Page</h1>
-
 <p id="status">読み込み中...</p>
 
-<div id="content">
+<div id="content" class="hidden">
+    <div class="profile-card">
+        <div id="profile-view">
+            <p><strong>Hello:</strong> <span id="displayNameView"></span></p>
+            <p><strong>Bio：</strong> <span id="bioView"></span></p>
+            <button onclick="toggleEdit(true)">プロフィールを編集</button>
+        </div>
+
+        <div id="profile-edit" class="hidden">
+            <p><label>Display Name:<br><input id="displayNameInput"></label></p>
+            <p><label>Bio:<br><textarea id="bioInput"></textarea></label></p>
+            <button onclick="updateProfile()">保存</button>
+            <button onclick="toggleEdit(false)">キャンセル</button>
+        </div>
+    </div>
+
+    <p>使用者 ID: <span id="userIdView"></span></p>
+
+    <div class="post-list">
+        <h3>あなたの投稿</h3>
+        <ul id="postsContainer"></ul>
+    </div>
 </div>
 
 <div id="menu">
-    <button onclick="goHome()">Home</button>
+    <button onclick="location.href='/'">Home</button>
     <button onclick="logout()">Logout</button>
 </div>
 
 <script>
+const token = localStorage.getItem("token");
 
-function goHome() {
-    location.href = "/";
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function logout() {
@@ -49,114 +66,91 @@ function logout() {
     location.href = "/";
 }
 
-function editProfile() {
-    const displayName = document.getElementById("displayName").textContent;
-    const bio = document.getElementById("bio").textContent;
-
-    document.getElementById("displayName").innerHTML = `
-        <input id="displayNameInput" value="${displayName}">
-    `;
-
-    document.getElementById("bio").innerHTML = `
-        <textarea id="bioInput">${bio}</textarea>
-    `;
-
-    document.querySelector(
-        'button[onclick="editProfile()"]'
-    ).outerHTML = `
-        <button onclick="updateProfile()">保存</button>
-        <button onclick="location.reload()">キャンセル</button>
-    `;
+function toggleEdit(isEditing) {
+    if (isEditing) {
+        document.getElementById("displayNameInput").value = document.getElementById("displayNameView").textContent;
+        document.getElementById("bioInput").value = document.getElementById("bioView").textContent;
+        document.getElementById("profile-view").classList.add("hidden");
+        document.getElementById("profile-edit").classList.remove("hidden");
+    } else {
+        document.getElementById("profile-view").classList.remove("hidden");
+        document.getElementById("profile-edit").classList.add("hidden");
+    }
 }
 
 async function updateProfile() {
-    const displayName =
-        document.getElementById("displayNameInput").value;
+    const displayName = document.getElementById("displayNameInput").value;
+    const bio = document.getElementById("bioInput").value;
 
-    const bio =
-        document.getElementById("bioInput").value;
+    try {
+        const response = await fetch("/api/me/profile", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ display_name: displayName, bio: bio })
+        });
 
-    const response = await fetch("/api/me/profile", {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({
-            display_name: displayName,
-            bio: bio
-        })
-    });
+        if (!response.ok) {
+            const data = await response.json();
+            alert(data.error || "更新失敗");
+            return;
+        }
 
-    if (!response.ok) {
-        const data = await response.json();
-        alert(data.error);
+        document.getElementById("displayNameView").textContent = displayName;
+        document.getElementById("bioView").textContent = bio;
+        toggleEdit(false);
+        alert("更新しました");
+    } catch (e) {
+        alert("通信エラー");
+    }
+}
+
+async function initMyPage() {
+    if (!token) {
+        location.href = "/login";
         return;
     }
 
-    alert("更新しました");
+    try {
+        const response = await fetch('/api/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
 
-    location.reload();
-}
+        if (!response.ok) throw new Error("データ取得できませんでした");
 
-const token = localStorage.getItem("token");
+        const data = await response.json();
+        const profile = data.userprofile || {};
+        const posts = data.posts || [];
 
-if (!token) {
-    location.href = "/login";
-} else {
-    document.getElementById("status").textContent = "マイページ";
+        document.getElementById("displayNameView").textContent = profile.display_name || '';
+        document.getElementById("bioView").textContent = profile.bio || '';
+        document.getElementById("userIdView").textContent = profile.user_id || '';
 
-    fetch('/api/me', {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('データ獲得できませんでした');
-        }
-        return response.json();
-    })
-    .then(data => {
-        const posts = data.posts;
-        const profile = data.userprofile;
-
-        let postsHtml = '';
-        
-        if (!posts || posts.length === 0) {
-            postsHtml = '<p>まだ投稿はありません。</p>';
+        const postsContainer = document.getElementById("postsContainer");
+        if (posts.length === 0) {
+            postsContainer.innerHTML = '<li>まだ投稿はありません。</li>';
         } else {
-            postsHtml = '<ul>';
-            posts.forEach(post => {
-                postsHtml += `<li><a href="/posts/${post.id}"><strong>${post.title}</strong></a><p>${post.created_at}</p></li>`;
-            });
-            postsHtml += '</ul>';
+            postsContainer.innerHTML = posts.map(post => `
+                <li>
+                    <a href="/posts/${escapeHTML(post.id)}">
+                        <strong>${escapeHTML(post.title)}</strong>
+                    </a>
+                    <p>${escapeHTML(post.created_at)}</p>
+                </li>
+            `).join('');
         }
 
-        document.getElementById("content").innerHTML = `
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <p>
-                    <strong>Hello</strong>
-                    <span id="displayName">${profile.display_name}</span>
-                </p>
-                <p>
-                    <strong>Bio：</strong>
-                    <span id="bio">${profile.bio}</span>
-                </p>
-
-                <button onclick="editProfile()">プロフィールを編集</button>
-            </div>
-
-            <p>使用者 ID: ${profile.user_id}</p>
-            <div class="post-list">
-                <h3>あなたの投稿</h3>
-                ${postsHtml}
-            </div>
-        `;
-    })
+        document.getElementById("status").textContent = "マイページ";
+        document.getElementById("content").classList.remove("hidden");
+    } catch (e) {
+        alert(e.message);
+        logout();
+    }
 }
 
+initMyPage();
 </script>
 
 </body>
