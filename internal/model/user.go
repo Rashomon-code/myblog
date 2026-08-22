@@ -32,3 +32,11 @@ type ProfileRequest struct {
 	DisplayName string `json:"display_name"`
 	Bio         string `json:"bio"`
 }
+
+type UserProfileResponse struct {
+	IsMe bool `json:"is_me"`
+	Data struct {
+		UserProfile UserProfile `json:"userprofile"`
+		PageResult
+	} `json:"data"`
+}

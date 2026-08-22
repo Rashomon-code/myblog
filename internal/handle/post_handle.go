@@ -110,15 +110,28 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"メッセージ": "更新しました"})
 }
 
-func (h *PostHandle) PostListAPI(c *gin.Context) {
-	posts, err := h.postService.PostHomeService()
+func (h *PostHandle) PostsListAPI(c *gin.Context) {
+	page, err := strconv.Atoi(c.Query("page")) // strconv.Atoi stringをintに変換
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト獲得できませんでした"})
+		pageSize = 10
+	}
+
+	posts, totalCount, err := h.postService.GetAllPostsService(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"posts": posts,
+	c.JSON(http.StatusOK, model.PageResult{
+		Posts:      posts,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
 	})
 }
 
@@ -142,4 +155,36 @@ func (h *PostHandle) SearchPostAPI(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, posts)
+}
+
+func (h *PostHandle) UserPostsAPI(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		return
+	}
+	userID := userIDVal.(int64)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.Query("page_size"))
+	if err != nil {
+		pageSize = 10
+	}
+
+	posts, totalCount, err := h.postService.GetPostTitle(userID, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.PageResult{
+		Posts:      posts,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+	})
 }

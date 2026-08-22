@@ -69,6 +69,12 @@
     <p>ロード中</p>
 </div>
 
+<div id="pagination">
+    <button id="btn-prev" onclick="changePage(-1)">前へ</button>
+    <span id="page-info">1 / 1 ページ</span>
+    <button id="btn-next" onclick="changePage(1)">次へ</button>
+</div>
+
 <script>
 
 function goLogin() { location.href = "/login"; }
@@ -112,6 +118,10 @@ if (token) {
     document.getElementById("menu").innerHTML = menuHTML;
 }
 
+let currentPage = 1;
+const pageSize = 20;
+let totalPages = 1;
+
 function renderPosts(posts) {
     const container = document.getElementById("posts-container");
     container.innerHTML = "";
@@ -135,13 +145,31 @@ function renderPosts(posts) {
     });
 }
 
-async function loadPosts() {
+function renderPagination(totalCount, page) {
+    totalPages = Math.ceil(totalCount / pageSize) || 1;
+    currentPage = page;
+
+    document.getElementById("page-info").textContent = `${currentPage} / ${totalPages} ページ`;
+    document.getElementById("btn-prev").disabled = (currentPage <= 1);
+    document.getElementById("btn-next").disabled = (currentPage >= totalPages);
+}
+
+async function loadPosts(page = 1) {
     try {
-        const response = await fetch('/api/posts');
+        const response = await fetch(`/api/posts?page=${page}&page_size=${pageSize}`);
         const data = await response.json();
         renderPosts(data.posts || []);
+        renderPagination(data.total_count, data.page);
     } catch (e) {
         document.getElementById("posts-container").textContent = "記事の取得に失敗しました。";
+    }
+}
+
+function changePage(delta) {
+    const newPage = currentPage + delta;
+
+    if (newPage >= 1 && newPage <= totalPages) {
+        loadPosts(newPage);
     }
 }
 
@@ -176,7 +204,7 @@ function handleKeyPress(event) {
     }
 }
 
-loadPosts();
+loadPosts(1);
 
 </script>
 

@@ -47,7 +47,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 
 	api := r.Group("/api")
 	{
-		api.GET("/posts", postHandle.PostListAPI)
+		api.GET("/posts", postHandle.PostsListAPI)
 		api.GET("/posts/:id", postHandle.PostDetailAPI)
 		api.GET("/posts/search", postHandle.SearchPostAPI)
 
@@ -70,6 +70,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me", userHandle.MyPageAPI)
+			protected.GET("/me/posts", postHandle.UserPostsAPI)
 			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
 		}
 

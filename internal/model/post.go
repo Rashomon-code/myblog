@@ -29,3 +29,10 @@ type PostDetail struct {
 	CreatedAt   time.Time `json:"created_at"`
 	DisplayName *string   `json:"display_name"` //LEFT JOIN で DisplayName が存在しない場合 nil になるため pointer を用いる
 }
+
+type PageResult struct {
+	Posts      []ArticleSummary `json:"posts"`
+	TotalCount int64            `json:"total_count"`
+	Page       int              `json:"page"`
+	PageSize   int              `json:"page_size"`
+}
