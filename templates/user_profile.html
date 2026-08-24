@@ -165,7 +165,7 @@ async function loadUserPosts(page = 1) {
         }
 
         const response = await fetch(
-            `/api/opt/users/${encodeURIComponent(userID)}?page=${page}&page_size=${pageSize}`,
+            `/api/users/${encodeURIComponent(userID)}/posts?page=${page}&page_size=${pageSize}`,
             { headers: headers }
         );
 
@@ -173,8 +173,7 @@ async function loadUserPosts(page = 1) {
             throw new Error("記事が取得できませんでした");
         }
 
-        const res = await response.json();
-        const data = res.data;
+        const data = await response.json();
         const posts = data.posts || [];
         const postsContainer = document.getElementById("postsContainer");
 
@@ -212,7 +211,7 @@ async function loadUserPage() {
         }
 
         const response = await fetch(
-            `/api/opt/users/${encodeURIComponent(userID)}?page=1&page_size=${pageSize}`,
+            `/api/opt/users/${encodeURIComponent(userID)}`,
             { headers: headers }
         );
 
@@ -227,7 +226,7 @@ async function loadUserPage() {
             document.getElementById("editProfileButton").classList.remove("hidden");
             document.getElementById("status").textContent = "マイページ";
         } else {
-            document.getElementById("status").textContent = "ユーザープロフィール";
+            document.getElementById("status").textContent = "ユーザーページ";
         }
 
         const data = res.data;

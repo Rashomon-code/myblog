@@ -157,13 +157,13 @@ func (h *PostHandle) SearchPostAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, posts)
 }
 
-func (h *PostHandle) UserPostsAPI(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+func (h *PostHandle) GetUserPosts(c *gin.Context) {
+	idStr := c.Param("id")
+	userID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが存在していません"})
 		return
 	}
-	userID := userIDVal.(int64)
 
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil {
