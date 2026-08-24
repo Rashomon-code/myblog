@@ -44,25 +44,21 @@
 <div id="content" class="hidden">
 
     <div class="profile-card">
-        <p>
-            <strong>名前：</strong>
-            <span id="displayNameView"></span>
-        </p>
+        <div id="profile-view">
+            <p><strong>ユーザー名:</strong> <span id="displayNameView"></span></p>
+            <p><strong>Bio：</strong> <span id="bioView"></span></p>
+            <button id="editProfileButton" class="hidden" onclick="toggleEdit(true)">プロフィールを編集</button>
+        </div>
 
-        <p>
-            <strong>Bio：</strong>
-            <span id="bioView"></span>
-        </p>
-
-        <p>
-            <strong>使用者 ID：</strong>
-            <span id="userIdView"></span>
-        </p>
-
-        <button id="editProfileButton" class="hidden" onclick="location.href='/mypage'">
-            プロフィールを編集
-        </button>
+        <div id="profile-edit" class="hidden">
+            <p><label>Display Name:<br><input id="displayNameInput"></label></p>
+            <p><label>Bio:<br><textarea id="bioInput"></textarea></label></p>
+            <button onclick="updateProfile()">保存</button>
+            <button onclick="toggleEdit(false)">キャンセル</button>
+        </div>
     </div>
+
+    <p>使用者 ID: <span id="userIdView"></span></p>
 
     <div class="post-list">
         <h3>投稿</h3>
@@ -79,6 +75,7 @@
 
 <div id="menu">
     <button onclick="goHome()">Home</button>
+    <button onclick="logout()">Logout</button>
 </div>
 
 <script>
@@ -97,9 +94,56 @@ function escapeHTML(str) {
         .replace(/'/g, "&#039;");
 }
 
+function logout() {
+    localStorage.removeItem("token");
+    location.href = "/";
+}
+
 function goHome() {
     location.href = "/";
 }
+
+function toggleEdit(isEditing) {
+    if (isEditing) {
+        document.getElementById("displayNameInput").value = document.getElementById("displayNameView").textContent;
+        document.getElementById("bioInput").value = document.getElementById("bioView").textContent;
+        document.getElementById("profile-view").classList.add("hidden");
+        document.getElementById("profile-edit").classList.remove("hidden");
+    } else {
+        document.getElementById("profile-view").classList.remove("hidden");
+        document.getElementById("profile-edit").classList.add("hidden");
+    }
+}
+
+async function updateProfile() {
+    const displayName = document.getElementById("displayNameInput").value;
+    const bio = document.getElementById("bioInput").value;
+
+    try {
+        const response = await fetch("/api/me/profile", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ display_name: displayName, bio: bio })
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            alert(data.error || "更新失敗");
+            return;
+        }
+
+        document.getElementById("displayNameView").textContent = displayName;
+        document.getElementById("bioView").textContent = bio;
+        toggleEdit(false);
+        alert("更新しました");
+    } catch (e) {
+        alert("通信エラー");
+    }
+}
+
 
 let currentPage = 1;
 const pageSize = 5;
@@ -123,7 +167,7 @@ async function loadUserProfile(page = 1) {
         );
 
         if (!response.ok) {
-            throw new Error("ユーザー情報を取得できませんでした");
+            throw new Error("記事が取得できませんでした");
         }
 
         const res = await response.json();
@@ -199,7 +243,7 @@ function changePage(delta) {
     const newPage = currentPage + delta;
 
     if (newPage >= 1 && newPage <= totalPages) {
-        loadMyPosts(newPage);
+        loadUserPosts(newPage);
     }
 }
 

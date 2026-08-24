@@ -25,10 +25,6 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		ctx.File("templates/post.html")
 	})
 
-	r.GET("/mypage", func(ctx *gin.Context) {
-		ctx.File("templates/mypage.html")
-	})
-
 	r.GET("/users/:id", func(ctx *gin.Context) {
 		ctx.File("templates/user_profile.html")
 	})
