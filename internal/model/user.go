@@ -37,6 +37,5 @@ type UserProfileResponse struct {
 	IsMe bool `json:"is_me"`
 	Data struct {
 		UserProfile UserProfile `json:"userprofile"`
-		PageResult
 	} `json:"data"`
 }

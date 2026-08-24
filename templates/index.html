@@ -80,9 +80,26 @@
 function goLogin() { location.href = "/login"; }
 function goRegister() { location.href = "/register"; }
 function goPost() { location.href = "/create"; }
-function goMypage() { location.href = "/mypage"; }
 function logout() { localStorage.removeItem("token"); location.reload(); }
 function goAdmin(){ location.href = "/admin/users"; }
+
+async function goMypage() {
+    try {
+        const response = await fetch("/api/me", {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+        if(!response.ok) {
+            throw new Error("ユーザー情報が取得できませんでした");
+        }
+
+        const user = await response.json();
+        location.href = `/users/${user.user_id}`;
+    } catch(error) {
+        alert(error.message);
+    }
+}
 
 function escapeHTML(str) {
     if (!str) return '';

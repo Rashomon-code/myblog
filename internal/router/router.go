@@ -25,10 +25,6 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		ctx.File("templates/post.html")
 	})
 
-	r.GET("/mypage", func(ctx *gin.Context) {
-		ctx.File("templates/mypage.html")
-	})
-
 	r.GET("/users/:id", func(ctx *gin.Context) {
 		ctx.File("templates/user_profile.html")
 	})
@@ -50,6 +46,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		api.GET("/posts", postHandle.PostsListAPI)
 		api.GET("/posts/:id", postHandle.PostDetailAPI)
 		api.GET("/posts/search", postHandle.SearchPostAPI)
+		api.GET("/users/:id/posts", postHandle.GetUserPosts)
 
 		auth := api.Group("/auth")
 		{
@@ -60,7 +57,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		opt := api.Group("/opt")
 		opt.Use(mw.OptionalAuthMiddleware())
 		{
-			opt.GET("/users/:id", userHandle.UserProfileAPI)
+			opt.GET("/users/:id", userHandle.GetUserProfile)
 		}
 
 		protected := api.Group("")
@@ -70,7 +67,6 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me", userHandle.MyPageAPI)
-			protected.GET("/me/posts", postHandle.UserPostsAPI)
 			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
 		}
 
