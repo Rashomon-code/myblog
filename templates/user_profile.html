@@ -157,6 +157,25 @@ function renderPagination(totalCount, page) {
     document.getElementById("btn-next").disabled = (currentPage >= totalPages);
 }
 
+function changePage(delta) {
+    const newPage = currentPage + delta;
+    if (newPage >= 1 && newPage <= totalPages) {
+        loadUserPosts(newPage);
+    }
+}
+
+function formaiDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('ja-JP',{
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+}
+
 async function loadUserPosts(page = 1) {
     try {
         const headers = {};
@@ -185,7 +204,7 @@ async function loadUserPosts(page = 1) {
                     <a href="/posts/${encodeURIComponent(post.id)}">
                         <strong>${escapeHTML(post.title)}</strong>
                     </a>
-                    <p>${escapeHTML(post.created_at)}</p>
+                    <p>${escapeHTML(formaiDate(post.created_at))}</p>
                 </li>
             `).join('');
         }
@@ -193,13 +212,6 @@ async function loadUserPosts(page = 1) {
         renderPagination(data.total_count, data.page);
     } catch (error) {
         alert(error.message)
-    }
-}
-
-function changePage(delta) {
-    const newPage = currentPage + delta;
-    if (newPage >= 1 && newPage <= totalPages) {
-        loadUserPosts(newPage);
     }
 }
 
