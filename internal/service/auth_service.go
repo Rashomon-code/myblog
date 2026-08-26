@@ -4,16 +4,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Rashomon-code/myblog/internal/repository"
+	"github.com/Rashomon-code/myblog/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type AuthRepositoryInterface interface {
+	CreateUserWithProfile(username, passwordHash string) error
+	GetUserByUsername(username string) (*model.User, error)
+}
+
 type AuthService struct {
-	repo *repository.AuthRepository
+	repo AuthRepositoryInterface
 	jwt  *JWTService
 }
 
-func NewAuthService(repo *repository.AuthRepository, jwt *JWTService) *AuthService {
+func NewAuthService(repo AuthRepositoryInterface, jwt *JWTService) *AuthService {
 	return &AuthService{repo: repo, jwt: jwt}
 }
 
