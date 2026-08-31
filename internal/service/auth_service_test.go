@@ -9,8 +9,10 @@ import (
 )
 
 type fakeAuthRepository struct {
-	user *model.User
-	err  error
+	user            *model.User
+	err             error
+	createdUsername string
+	createdPassword string
 }
 
 func (f *fakeAuthRepository) GetUserByUsername(username string) (*model.User, error) {
@@ -18,6 +20,9 @@ func (f *fakeAuthRepository) GetUserByUsername(username string) (*model.User, er
 }
 
 func (f *fakeAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
+	f.createdUsername = username
+	f.createdPassword = passwordHash
+
 	return f.err
 }
 
@@ -98,5 +103,41 @@ func TestLogin_WrongPassword(t *testing.T) {
 	}
 	if token != "" {
 		t.Errorf("expected empty token, got %s", token)
+	}
+}
+
+func TestRegister(t *testing.T) {
+	repo := &fakeAuthRepository{}
+	service := newTestAuthService(repo)
+
+	err := service.Register(username, password)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if repo.createdUsername != username {
+		t.Errorf("expected username %s, got %s", username, repo.createdUsername)
+	}
+
+	if repo.createdPassword == password {
+		t.Error("password should not be stored as plain text")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(repo.createdPassword), []byte(password))
+	if err != nil {
+		t.Error("password hash does not match original password")
+	}
+}
+
+func TestRegister_RepositoryError(t *testing.T) {
+	repo := &fakeAuthRepository{
+		err: errors.New("database error"),
+	}
+	service := newTestAuthService(repo)
+
+	err := service.Register(username, password)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
