@@ -32,7 +32,7 @@ func (h *PostHandle) CreatePostAPI(c *gin.Context) {
 		return
 	}
 
-	err := h.postService.CreatePostService(userID, req.Title, req.Content)
+	err := h.postService.CreatePost(userID, req.Title, req.Content)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -71,7 +71,7 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	userRole := c.GetString("role")
 
-	err = h.postService.DeletePostService(postID, userID, userRole)
+	err = h.postService.DeletePost(postID, userID, userRole)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
