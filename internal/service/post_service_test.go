@@ -22,24 +22,12 @@ func (m *mockPostRepository) GetPostDetail(postID int64) (model.PostDetail, erro
 	return m.GetPostDetailFunc(postID)
 }
 
-func TestCreatePost(t *testing.T) {
-	s := NewPostService(nil)
-
-	testCases := []string{
-		"",
-		" ",
-		"\n",
-	}
-
+func TestValidateTitle(t *testing.T) {
+	testCases := []string{"", " ", "\n", "  \n"}
 	for _, tc := range testCases {
-		err := s.CreatePost(1, tc, "テスト")
-		if err == nil {
-			t.Fatalf("タイトル [%s]、エラーのはずですが、結果は nil でした", tc)
-		}
-
-		expectedMsg := "タイトルが入力されていません"
-		if err.Error() != expectedMsg {
-			t.Errorf("エラーメッセージが相違します: [%s]のはずですが、 [%s]でした", expectedMsg, err.Error())
+		_, err := validateTitle(tc)
+		if !errors.Is(err, ErrInvalidTitle) {
+			t.Errorf("expected %v, got %v", ErrInvalidTitle, err)
 		}
 	}
 }

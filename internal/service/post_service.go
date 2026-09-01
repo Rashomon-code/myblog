@@ -8,6 +8,7 @@ import (
 )
 
 var ErrForbidden = errors.New("権限がありません")
+var ErrInvalidTitle = errors.New("タイトルが入力されていません")
 
 type PostRepository interface {
 	CreatePost(userID int64, title string, content string) error
@@ -27,13 +28,21 @@ func NewPostService(repo PostRepository) *PostService {
 	return &PostService{repo: repo}
 }
 
-func (s *PostService) CreatePost(userID int64, title string, content string) error {
+func validateTitle(title string) (string, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return errors.New("タイトルが入力されていません")
+		return "", ErrInvalidTitle
+	}
+	return title, nil
+}
+
+func (s *PostService) CreatePost(userID int64, title string, content string) error {
+	title, err := validateTitle(title)
+	if err != nil {
+		return err
 	}
 
-	err := s.repo.CreatePost(userID, title, content)
+	err = s.repo.CreatePost(userID, title, content)
 	if err != nil {
 		return err
 	}
@@ -70,6 +79,10 @@ func (s *PostService) EditPostService(postID int64, title string, content string
 
 	if post.UserID != userID && userRole != "admin" {
 		return ErrForbidden
+	}
+
+	if title, err = validateTitle(title); err != nil {
+		return err
 	}
 
 	return s.repo.EditPost(postID, title, content)
