@@ -7,11 +7,9 @@ import (
 	"github.com/Rashomon-code/myblog/internal/model"
 )
 
-//ムズイ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
-
 type mockPostRepository struct {
 	PostRepository
-
+	//関数を変数として struct に保存して仕様する前に実作します（関数も変数？関数ポインター？）
 	GetPostDetailFunc func(postID int64) (model.PostDetail, error)
 	DeletePostFunc    func(postID int64) error
 }

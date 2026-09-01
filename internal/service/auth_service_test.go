@@ -8,18 +8,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type fakeAuthRepository struct {
+type mockAuthRepository struct {
 	user            *model.User
 	err             error
 	createdUsername string
 	createdPassword string
 }
 
-func (f *fakeAuthRepository) GetUserByUsername(username string) (*model.User, error) {
+func (f *mockAuthRepository) GetUserByUsername(username string) (*model.User, error) {
 	return f.user, f.err
 }
 
-func (f *fakeAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
+func (f *mockAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
 	f.createdUsername = username
 	f.createdPassword = passwordHash
 
@@ -55,7 +55,7 @@ const (
 func TestLogin_Success(t *testing.T) {
 	user := newTestUser(t, username, password)
 
-	repo := &fakeAuthRepository{
+	repo := &mockAuthRepository{
 		user: user,
 	}
 
@@ -71,7 +71,7 @@ func TestLogin_Success(t *testing.T) {
 }
 
 func TestLogin_UserNotFound(t *testing.T) {
-	repo := &fakeAuthRepository{
+	repo := &mockAuthRepository{
 		user: nil,
 		err:  errors.New("user not found"),
 	}
@@ -90,7 +90,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 func TestLogin_WrongPassword(t *testing.T) {
 	user := newTestUser(t, username, password)
 
-	repo := &fakeAuthRepository{
+	repo := &mockAuthRepository{
 		user: user,
 	}
 
@@ -107,7 +107,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	repo := &fakeAuthRepository{}
+	repo := &mockAuthRepository{}
 	service := newTestAuthService(repo)
 
 	err := service.Register(username, password)
@@ -131,7 +131,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegister_RepositoryError(t *testing.T) {
-	repo := &fakeAuthRepository{
+	repo := &mockAuthRepository{
 		err: errors.New("database error"),
 	}
 	service := newTestAuthService(repo)
