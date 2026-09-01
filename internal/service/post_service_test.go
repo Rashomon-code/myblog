@@ -13,6 +13,7 @@ type mockPostRepository struct {
 	GetPostDetailFunc func(postID int64) (model.PostDetail, error)
 	DeletePostFunc    func(postID int64) error
 	CreatePostFunc    func(userID int64, title string, content string) error
+	EditPostFunc      func(postID int64, title string, content string) error
 }
 
 func (m *mockPostRepository) DeletePost(postID int64) error {
@@ -25,6 +26,10 @@ func (m *mockPostRepository) GetPostDetail(postID int64) (model.PostDetail, erro
 
 func (m *mockPostRepository) CreatePost(userID int64, title string, content string) error {
 	return m.CreatePostFunc(userID, title, content)
+}
+
+func (m *mockPostRepository) EditPost(postID int64, title string, content string) error {
+	return m.EditPostFunc(postID, title, content)
 }
 
 func TestValidateTitle(t *testing.T) {
@@ -64,22 +69,37 @@ func TestCreatePost_RepoError(t *testing.T) {
 }
 
 func TestCreatePost_Success(t *testing.T) {
-	var capturedTitle string
+	var (
+		capturedUserID  int64
+		capturedTitle   string
+		capturedContent string
+	)
+
 	mockRepo := &mockPostRepository{
 		CreatePostFunc: func(userID int64, title, content string) error {
+			capturedUserID = userID
 			capturedTitle = title
+			capturedContent = content
 			return nil
 		},
 	}
 
 	service := NewPostService(mockRepo)
-	err := service.CreatePost(1, " title   ", "content")
+	err := service.CreatePost(100, " Test Post ", "Hello")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if capturedTitle != "title" {
-		t.Errorf("expected clean title 'Hello Go', got '%s'", capturedTitle)
+	if capturedUserID != 100 {
+		t.Errorf("expected userID 100, got '%d'", capturedUserID)
+	}
+
+	if capturedTitle != "Test Post" {
+		t.Errorf("expected title %q, got '%s'", "Test Post", capturedTitle)
+	}
+
+	if capturedContent != "Hello" {
+		t.Errorf("expected content %q, got '%s'", "Hello", capturedContent)
 	}
 }
 
@@ -118,5 +138,40 @@ func TestDeletePost_Forbidden(t *testing.T) {
 	err := service.DeletePost(1, 200, "user")
 	if !errors.Is(err, ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestEditPost_Success(t *testing.T) {
+	var post = model.PostDetail{
+		ID:      100,
+		UserID:  100,
+		Title:   "編集前タイトル",
+		Content: "編集前",
+	}
+
+	mockRepo := &mockPostRepository{
+		GetPostDetailFunc: func(postID int64) (model.PostDetail, error) {
+			return post, nil
+		},
+		EditPostFunc: func(postID int64, title string, content string) error {
+			post.Title = title
+			post.Content = content
+			return nil
+		},
+	}
+
+	service := NewPostService(mockRepo)
+
+	err := service.EditPost(100, "編集後タイトル", "編集後", 100, "user")
+	if err != nil {
+		t.Fatalf("unexpected err %v", err)
+	}
+
+	if post.Title != "編集後タイトル" {
+		t.Errorf("expected %q, got %q", "編集後タイトル", post.Title)
+	}
+
+	if post.Content != "編集後" {
+		t.Errorf("expected %q, got %q", "編集後", post.Content)
 	}
 }

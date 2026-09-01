@@ -97,7 +97,7 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	userRole := c.GetString("role")
 
-	err = h.postService.EditPostService(postID, req.Title, req.Content, userID, userRole)
+	err = h.postService.EditPost(postID, req.Title, req.Content, userID, userRole)
 	if err != nil {
 		if err.Error() == "更新できませんでした" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

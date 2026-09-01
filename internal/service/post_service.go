@@ -71,7 +71,7 @@ func (s *PostService) DeletePost(postID, userID int64, userRole string) error {
 	return s.repo.DeletePost(postID)
 }
 
-func (s *PostService) EditPostService(postID int64, title string, content string, userID int64, userRole string) error {
+func (s *PostService) EditPost(postID int64, title string, content string, userID int64, userRole string) error {
 	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
