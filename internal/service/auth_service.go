@@ -23,7 +23,7 @@ func NewAuthService(repo AuthRepositoryInterface, jwt *JWTService) *AuthService 
 }
 
 func (s *AuthService) Register(username, password string) error {
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 4)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 4) //学習のため、最低レベルを使用します
 	if err != nil {
 		return fmt.Errorf("登録できませんでした: %w", err)
 	}

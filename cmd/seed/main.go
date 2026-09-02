@@ -29,7 +29,7 @@ func main() {
 	stmt, err := tx.Prepare(`
 		INSERT INTO posts (title, content, user_id, created_at)
 		VALUES ($1, $2, $3, $4)
-	`)
+	`) //SQL を用意する、 Prepare は分析するが、実行はしない
 	if err != nil {
 		log.Fatal(err)
 	}
