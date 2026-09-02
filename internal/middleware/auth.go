@@ -35,17 +35,9 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(t *jwt.Token) (any, error) {
-			return []byte(m.jwtService.Secret), nil
-		})
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "無効な Token"})
-			c.Abort()
-			return
-		}
 
-		claims, ok := token.Claims.(*model.Claims)
-		if !ok {
+		claims, err := m.jwtService.ParseToken(tokenString)
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"エラー": "求められる Token ではありません。"})
 			c.Abort()
 			return
