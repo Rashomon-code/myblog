@@ -31,11 +31,29 @@
 </table>
 
 <br>
-<button onclick="location.href='/mypage'">マイページに戻る</button>
+<button onclick="goMypage()">マイページに戻る</button>
 
 <script>
 const token = localStorage.getItem("token");
 if (!token) location.href = "/login";
+
+async function goMypage() {
+    try {
+        const response = await fetch("/api/me", {
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        });
+        if(!response.ok) {
+            throw new Error("ユーザー情報が取得できませんでした");
+        }
+
+        const user = await response.json();
+        location.href = `/users/${user.user_id}`;
+    } catch(error) {
+        alert(error.message);
+    }
+}
 
 function loadUsers() {
     fetch('/api/admin/users', {
