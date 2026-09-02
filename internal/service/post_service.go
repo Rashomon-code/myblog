@@ -5,26 +5,44 @@ import (
 	"strings"
 
 	"github.com/Rashomon-code/myblog/internal/model"
-	"github.com/Rashomon-code/myblog/internal/repository"
 )
 
 var ErrForbidden = errors.New("権限がありません")
+var ErrInvalidTitle = errors.New("タイトルが入力されていません")
 
-type PostService struct {
-	repo *repository.PostRepository
+type PostRepository interface {
+	CreatePost(userID int64, title string, content string) error
+	GetTitleByUserID(userID int64, page, pageSize int) ([]model.ArticleSummary, int64, error)
+	GetPostDetail(postID int64) (model.PostDetail, error)
+	DeletePost(postID int64) error
+	EditPost(postID int64, title string, content string) error
+	GetAllPosts(page, pageSize int) ([]model.ArticleSummary, int64, error)
+	SearchPost(keyword string) ([]model.ArticleSummary, error)
 }
 
-func NewPostService(repo *repository.PostRepository) *PostService {
+type PostService struct {
+	repo PostRepository
+}
+
+func NewPostService(repo PostRepository) *PostService {
 	return &PostService{repo: repo}
 }
 
-func (s *PostService) CreatePostService(userID int64, title string, content string) error {
+func validateTitle(title string) (string, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return errors.New("タイトルが入力されていません")
+		return "", ErrInvalidTitle
+	}
+	return title, nil
+}
+
+func (s *PostService) CreatePost(userID int64, title string, content string) error {
+	title, err := validateTitle(title)
+	if err != nil {
+		return err
 	}
 
-	err := s.repo.CreatePost(userID, title, content)
+	err = s.repo.CreatePost(userID, title, content)
 	if err != nil {
 		return err
 	}
@@ -40,7 +58,7 @@ func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) 
 	return s.repo.GetPostDetail(postID)
 }
 
-func (s *PostService) DeletePostService(postID, userID int64, userRole string) error {
+func (s *PostService) DeletePost(postID, userID int64, userRole string) error {
 	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
@@ -53,7 +71,7 @@ func (s *PostService) DeletePostService(postID, userID int64, userRole string) e
 	return s.repo.DeletePost(postID)
 }
 
-func (s *PostService) EditPostService(postID int64, title string, content string, userID int64, userRole string) error {
+func (s *PostService) EditPost(postID int64, title string, content string, userID int64, userRole string) error {
 	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
@@ -61,6 +79,10 @@ func (s *PostService) EditPostService(postID int64, title string, content string
 
 	if post.UserID != userID && userRole != "admin" {
 		return ErrForbidden
+	}
+
+	if title, err = validateTitle(title); err != nil {
+		return err
 	}
 
 	return s.repo.EditPost(postID, title, content)
