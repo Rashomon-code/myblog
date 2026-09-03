@@ -12,20 +12,20 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_NAME: myblog
-      INITIAL_ADMIN_USER: superadmin
-      INITIAL_ADMIN_PASS: "ComplexPassword123!"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      INITIAL_ADMIN_USER: ${INITIAL_ADMIN_USER}
+      INITIAL_ADMIN_PASS: ${INITIAL_ADMIN_PASS}
 
   db:
     image: postgres:alpine
     container_name: local-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: myblog
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
