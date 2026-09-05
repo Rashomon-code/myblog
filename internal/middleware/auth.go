@@ -4,10 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/Rashomon-code/myblog/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type Middleware struct {
@@ -81,16 +79,12 @@ func (m *Middleware) OptionalAuthMiddleware() gin.HandlerFunc {
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			tokenString := parts[1]
-			token, err := jwt.ParseWithClaims(tokenString, &model.Claims{}, func(t *jwt.Token) (any, error) {
-				return []byte(m.jwtService.Secret), nil
-			})
+			claims, err := m.jwtService.ParseToken(tokenString)
 
-			if err == nil && token.Valid {
-				if claims, ok := token.Claims.(*model.Claims); ok {
-					c.Set("userID", claims.UserID)
-					c.Set("username", claims.Username)
-					c.Set("role", claims.Role)
-				}
+			if err == nil {
+				c.Set("userID", claims.UserID)
+				c.Set("username", claims.Username)
+				c.Set("role", claims.Role)
 			}
 		}
 		c.Next()

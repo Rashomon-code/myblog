@@ -123,3 +123,109 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	// }
 	//どちらも内容を比較し、結果を t に記録します
 }
+
+func TestRequireRole_Success(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("role", "admin")
+	})
+	r.Use(mw.RequireRole("admin"))
+	r.GET("/role", func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.True(t, handlerReached)
+}
+
+func TestRequireRole_Forbidden(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("role", "user")
+	})
+	r.Use(mw.RequireRole("admin"))
+	r.GET("/role", func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.False(t, handlerReached)
+}
+
+func TestRequireRole_MissingRoleContext(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.RequireRole("admin"))
+	r.GET("/role", func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.False(t, handlerReached)
+}
+
+func TestOptionalAuthMiddleware_Success(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.OptionalAuthMiddleware())
+	r.GET("/optional", func(c *gin.Context) {
+		handlerReached = true
+		userID, exists := c.Get("userID")
+		if !exists || userID != int64(100) {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		username, exists := c.Get("username")
+		if !exists || username != "testuser" {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		role, exists := c.Get("role")
+		if !exists || role != "user" {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Status(http.StatusOK)
+	})
+
+	tokenString, _ := jwtService.GenerateToken("testuser", int64(100), "user")
+
+	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.True(t, handlerReached)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
