@@ -10,6 +10,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func setupFailedTestRouter(mw gin.HandlerFunc) (*gin.Engine, *bool) {
+	handlerReached := false
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw)
+
+	r.GET("/protected", func(c *gin.Context) {
+		handlerReached = true
+	})
+
+	return r, &handlerReached
+}
+
 func TestAuthMiddleware_Success(t *testing.T) {
 	handlerReached := false
 
@@ -56,70 +70,42 @@ func TestAuthMiddleware_Success(t *testing.T) {
 }
 
 func TestAuthMiddleware_MissingHeader(t *testing.T) {
-	handlerReached := false
 	jwtService := service.NewJWTService("test")
 	mw := NewMiddleware(jwtService)
 
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.AuthMiddleware())
-	r.GET("/protected", func(ctx *gin.Context) {
-		handlerReached = true
-	})
+	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
-	req.Header.Set("", "")
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil) // "/test" 定義されていない Path にアクセスしようとしても、Middleware に経由します
+	// req.Header.Set("", "")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if handlerReached == true {
-		t.Errorf("expected handlerReached false, got %v", handlerReached)
-	}
-
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %v, got %d", http.StatusUnauthorized, w.Code)
-	}
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.False(t, *handlerReached)
 }
 
 func TestAuthMiddleware_InvalidFormat(t *testing.T) {
-	handlerReached := false
 	jwtService := service.NewJWTService("test")
 	mw := NewMiddleware(jwtService)
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.AuthMiddleware())
-	r.GET("/protected", func(ctx *gin.Context) {
-		handlerReached = true
-	})
+	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
 
 	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Bearer this is an expected 401 test header")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if handlerReached {
-		t.Errorf("expected handlerReached false, got %v", handlerReached)
-	}
-
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %v, got %d", http.StatusUnauthorized, w.Code)
-	}
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.False(t, *handlerReached)
 }
 
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
-	handlerReached := false
 	jwtService := service.NewJWTService("test")
 	mw := NewMiddleware(jwtService)
 
 	wrongJWTService := service.NewJWTService("wrong")
 	tokenString, _ := wrongJWTService.GenerateToken("wrong", int64(100), "user")
 
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.AuthMiddleware())
-	r.GET("/protected", func(ctx *gin.Context) {
-		handlerReached = true
-	})
+	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
 
 	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Bearer "+tokenString)
@@ -128,7 +114,7 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.False(t, handlerReached) //assert.Equal(t, handlerReached, false)
+	assert.False(t, *handlerReached) //assert.Equal(t, handlerReached, false)
 	// if handlerReached {
 	// 	t.Errorf("expected handlerReached false, got %v", handlerReached)
 	// }
