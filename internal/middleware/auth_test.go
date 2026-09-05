@@ -54,3 +54,86 @@ func TestAuthMiddleware_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.True(t, handlerReached)
 }
+
+func TestAuthMiddleware_MissingHeader(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.AuthMiddleware())
+	r.GET("/protected", func(ctx *gin.Context) {
+		handlerReached = true
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("", "")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if handlerReached == true {
+		t.Errorf("expected handlerReached false, got %v", handlerReached)
+	}
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %v, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
+func TestAuthMiddleware_InvalidFormat(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.AuthMiddleware())
+	r.GET("/protected", func(ctx *gin.Context) {
+		handlerReached = true
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer this is an expected 401 test header")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if handlerReached {
+		t.Errorf("expected handlerReached false, got %v", handlerReached)
+	}
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %v, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
+func TestAuthMiddleware_InvalidToken(t *testing.T) {
+	handlerReached := false
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+
+	wrongJWTService := service.NewJWTService("wrong")
+	tokenString, _ := wrongJWTService.GenerateToken("wrong", int64(100), "user")
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.AuthMiddleware())
+	r.GET("/protected", func(ctx *gin.Context) {
+		handlerReached = true
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.False(t, handlerReached) //assert.Equal(t, handlerReached, false)
+	// if handlerReached {
+	// 	t.Errorf("expected handlerReached false, got %v", handlerReached)
+	// }
+	// if w.Code != http.StatusUnauthorized {
+	// 	t.Errorf("expected status %v, got %d", http.StatusUnauthorized, w.Code)
+	// }
+	//どちらも内容を比較し、結果を t に記録します
+}
