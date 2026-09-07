@@ -4,14 +4,20 @@ import (
 	"errors"
 
 	"github.com/Rashomon-code/myblog/internal/model"
-	"github.com/Rashomon-code/myblog/internal/repository"
 )
 
 type UserService struct {
-	repo *repository.UserRepository
+	repo UserRepository
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
+type UserRepository interface {
+	GetUserProfile(userID int64) (*model.UserProfile, error)
+	UpdateRole(userID int64, newRole string) error
+	GetAllUsers() ([]model.UserResponse, error)
+	UpdateUserProfile(userID int64, displayName, bio string) error
+}
+
+func NewUserService(repo UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
