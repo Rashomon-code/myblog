@@ -190,7 +190,7 @@ func TestRequireRole_MissingRoleContext(t *testing.T) {
 	assert.False(t, handlerReached)
 }
 
-func TestOptionalAuthMiddleware_Success(t *testing.T) {
+func TestOptionalAuthMiddleware_ValidToken(t *testing.T) {
 	handlerReached := false
 	jwtService := service.NewJWTService("test")
 	mw := NewMiddleware(jwtService)
@@ -228,4 +228,58 @@ func TestOptionalAuthMiddleware_Success(t *testing.T) {
 
 	assert.True(t, handlerReached)
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestOptionalAuthMiddleware_NoHeader(t *testing.T) {
+	handlerReached := false
+	var userID int64
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.OptionalAuthMiddleware())
+	r.GET("/optional", func(c *gin.Context) {
+		handlerReached = true
+		userIDAny, exists := c.Get("userID")
+		if exists {
+			userID = userIDAny.(int64)
+		}
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.True(t, handlerReached)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), userID)
+}
+
+func TestOptionalAuthMiddleware_InvalidToken(t *testing.T) {
+	handlerReached := false
+	var userID int64
+	jwtService := service.NewJWTService("test")
+	mw := NewMiddleware(jwtService)
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw.OptionalAuthMiddleware())
+	r.GET("/optional", func(c *gin.Context) {
+		handlerReached = true
+		userIDAny, exists := c.Get("userID")
+		if exists {
+			userID = userIDAny.(int64)
+		}
+		c.Status(http.StatusOK)
+	})
+
+	tokenString := "this.is.a.test.token" //期限切れtokenを作成してもいい、かりのclaimsから書く必要があります
+	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.True(t, handlerReached)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), userID)
 }
