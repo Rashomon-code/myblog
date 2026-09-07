@@ -10,30 +10,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupFailedTestRouter(mw gin.HandlerFunc) (*gin.Engine, *bool) {
-	handlerReached := false
-
+func setupTestRouter(mw gin.HandlerFunc, handler func(c *gin.Context)) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(mw)
 
-	r.GET("/protected", func(c *gin.Context) {
-		handlerReached = true
-	})
+	r.GET("/test", handler)
 
-	return r, &handlerReached
+	return r
+}
+
+func newTestMiddleware(secret string) *Middleware {
+	jwtService := service.NewJWTService(secret)
+	mw := NewMiddleware(jwtService)
+	return mw
 }
 
 func TestAuthMiddleware_Success(t *testing.T) {
+	mw := newTestMiddleware("test")
+
 	handlerReached := false
 
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.AuthMiddleware())
-	r.GET("/protected", func(c *gin.Context) {
+	handler := func(c *gin.Context) {
 		handlerReached = true
 		userID, exists := c.Get("userID")
 		//userID.(int64) != 100 ok, userID != int64(100) ok, but userID != 100 fail
@@ -55,11 +53,13 @@ func TestAuthMiddleware_Success(t *testing.T) {
 		}
 
 		c.Status(http.StatusOK)
-	})
+	}
 
-	tokenString, _ := jwtService.GenerateToken("testuser", int64(100), "user")
+	r := setupTestRouter(mw.AuthMiddleware(), handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	tokenString, _ := mw.jwtService.GenerateToken("testuser", int64(100), "user")
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer "+tokenString)
 	w := httptest.NewRecorder()
 
@@ -70,51 +70,63 @@ func TestAuthMiddleware_Success(t *testing.T) {
 }
 
 func TestAuthMiddleware_MissingHeader(t *testing.T) {
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
+	handlerReached := false
+	mw := newTestMiddleware("test")
+	handler := func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	}
 
-	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
+	r := setupTestRouter(mw.AuthMiddleware(), handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil) // "/test" 定義されていない Path にアクセスしようとしても、Middleware に経由します
+	req := httptest.NewRequest(http.MethodGet, "/test", nil) // "/test" 定義されていない Path にアクセスしようとしても、Middleware に経由します
 	// req.Header.Set("", "")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.False(t, *handlerReached)
+	assert.False(t, handlerReached)
 }
 
 func TestAuthMiddleware_InvalidFormat(t *testing.T) {
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
+	mw := newTestMiddleware("test")
+	handlerReached := false
+	handler := func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	}
+	r := setupTestRouter(mw.AuthMiddleware(), handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer this is an expected 401 test header")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.False(t, *handlerReached)
+	assert.False(t, handlerReached)
 }
 
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-
+	mw := newTestMiddleware("test")
 	wrongJWTService := service.NewJWTService("wrong")
 	tokenString, _ := wrongJWTService.GenerateToken("wrong", int64(100), "user")
+	handlerReached := false
+	handler := func(c *gin.Context) {
+		handlerReached = true
+		c.Status(http.StatusOK)
+	}
 
-	r, handlerReached := setupFailedTestRouter(mw.AuthMiddleware())
+	r := setupTestRouter(mw.AuthMiddleware(), handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer "+tokenString)
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.False(t, *handlerReached) //assert.Equal(t, handlerReached, false)
+	assert.False(t, handlerReached) //assert.Equal(t, handlerReached, false)と同じ
+
 	// if handlerReached {
 	// 	t.Errorf("expected handlerReached false, got %v", handlerReached)
 	// }
@@ -126,12 +138,12 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 
 func TestRequireRole_Success(t *testing.T) {
 	handlerReached := false
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
+	mw := newTestMiddleware("test")
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set("role", "admin")
+		c.Next()
 	})
 	r.Use(mw.RequireRole("admin"))
 	r.GET("/role", func(c *gin.Context) {
@@ -149,12 +161,12 @@ func TestRequireRole_Success(t *testing.T) {
 
 func TestRequireRole_Forbidden(t *testing.T) {
 	handlerReached := false
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
+	mw := newTestMiddleware("test")
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set("role", "user")
+		c.Next()
 	})
 	r.Use(mw.RequireRole("admin"))
 	r.GET("/role", func(c *gin.Context) {
@@ -172,17 +184,16 @@ func TestRequireRole_Forbidden(t *testing.T) {
 
 func TestRequireRole_MissingRoleContext(t *testing.T) {
 	handlerReached := false
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.RequireRole("admin"))
-	r.GET("/role", func(c *gin.Context) {
+	mw := newTestMiddleware("test")
+
+	handler := func(c *gin.Context) {
 		handlerReached = true
 		c.Status(http.StatusOK)
-	})
+	}
 
-	req := httptest.NewRequest(http.MethodGet, "/role", nil)
+	r := setupTestRouter(mw.RequireRole("admin"), handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -192,12 +203,8 @@ func TestRequireRole_MissingRoleContext(t *testing.T) {
 
 func TestOptionalAuthMiddleware_ValidToken(t *testing.T) {
 	handlerReached := false
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.OptionalAuthMiddleware())
-	r.GET("/optional", func(c *gin.Context) {
+	mw := newTestMiddleware("test")
+	handler := func(c *gin.Context) {
 		handlerReached = true
 		userID, exists := c.Get("userID")
 		if !exists || userID != int64(100) {
@@ -217,11 +224,13 @@ func TestOptionalAuthMiddleware_ValidToken(t *testing.T) {
 			return
 		}
 		c.Status(http.StatusOK)
-	})
+	}
 
-	tokenString, _ := jwtService.GenerateToken("testuser", int64(100), "user")
+	r := setupTestRouter(mw.OptionalAuthMiddleware(), handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	tokenString, _ := mw.jwtService.GenerateToken("testuser", int64(100), "user")
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer "+tokenString)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -233,21 +242,18 @@ func TestOptionalAuthMiddleware_ValidToken(t *testing.T) {
 func TestOptionalAuthMiddleware_NoHeader(t *testing.T) {
 	handlerReached := false
 	var userID int64
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.OptionalAuthMiddleware())
-	r.GET("/optional", func(c *gin.Context) {
+	mw := newTestMiddleware("test")
+	handler := func(c *gin.Context) {
 		handlerReached = true
 		userIDAny, exists := c.Get("userID")
 		if exists {
 			userID = userIDAny.(int64)
 		}
 		c.Status(http.StatusOK)
-	})
+	}
 
-	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	r := setupTestRouter(mw.OptionalAuthMiddleware(), handler)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -259,22 +265,20 @@ func TestOptionalAuthMiddleware_NoHeader(t *testing.T) {
 func TestOptionalAuthMiddleware_InvalidToken(t *testing.T) {
 	handlerReached := false
 	var userID int64
-	jwtService := service.NewJWTService("test")
-	mw := NewMiddleware(jwtService)
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(mw.OptionalAuthMiddleware())
-	r.GET("/optional", func(c *gin.Context) {
+	mw := newTestMiddleware("test")
+	handler := func(c *gin.Context) {
 		handlerReached = true
 		userIDAny, exists := c.Get("userID")
 		if exists {
 			userID = userIDAny.(int64)
 		}
 		c.Status(http.StatusOK)
-	})
+	}
+
+	r := setupTestRouter(mw.OptionalAuthMiddleware(), handler)
 
 	tokenString := "this.is.a.test.token" //期限切れtokenを作成してもいい、かりのclaimsから書く必要があります
-	req := httptest.NewRequest(http.MethodGet, "/optional", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Authorization", "Bearer "+tokenString)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
