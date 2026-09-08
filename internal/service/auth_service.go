@@ -10,6 +10,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	ErrUsernameInvalidLength = errors.New("username must be between 3 and 20 characters")
+	ErrUsernameContainsSpace = errors.New("username cannot contain spaces")
+	ErrDatabase              = errors.New("database error")
+	ErrLogin                 = errors.New("入力に誤りがございます")
+)
+
 type AuthRepositoryInterface interface {
 	CreateUserWithProfile(username, passwordHash string) error
 	GetUserByUsername(username string) (*model.User, error)
@@ -35,11 +42,11 @@ func NewAuthService(repo AuthRepositoryInterface, jwt *JWTService) *AuthService 
 
 func validateUsername(username string) error {
 	if len(username) < 3 || len(username) > 20 {
-		return errors.New("3 文字から 20 文字を入力してください")
+		return ErrUsernameInvalidLength
 	}
 
 	if strings.IndexFunc(username, unicode.IsSpace) != -1 {
-		return errors.New("スペースが含まれています")
+		return ErrUsernameContainsSpace
 	}
 
 	return nil
@@ -63,12 +70,12 @@ func (s *AuthService) Register(username, password string) error {
 func (s *AuthService) Login(username, password string) (string, error) {
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
-		return "", errors.New("入力に誤りがございます。")
+		return "", ErrLogin
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", errors.New("入力に誤りがございます。")
+		return "", ErrLogin
 	}
 
 	token, err := s.jwt.GenerateToken(username, user.ID, user.Role)
