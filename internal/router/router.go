@@ -50,8 +50,8 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 
 		auth := api.Group("/auth")
 		{
-			auth.POST("/register", authHandle.RegisterAPI)
-			auth.POST("/login", authHandle.LoginAPI)
+			auth.POST("/register", authHandle.Register)
+			auth.POST("/login", authHandle.Login)
 		}
 
 		opt := api.Group("/opt")

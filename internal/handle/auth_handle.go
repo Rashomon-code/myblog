@@ -5,19 +5,23 @@ import (
 	"net/http"
 
 	"github.com/Rashomon-code/myblog/internal/model"
-	"github.com/Rashomon-code/myblog/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandle struct {
-	authService *service.AuthService
+	authService AuthService
 }
 
-func NewAuthHandle(s *service.AuthService) *AuthHandle {
+func NewAuthHandle(s AuthService) *AuthHandle {
 	return &AuthHandle{authService: s}
 }
 
-func (a *AuthHandle) RegisterAPI(c *gin.Context) {
+type AuthService interface {
+	Register(username, password string) error
+	Login(username, password string) (string, error)
+}
+
+func (a *AuthHandle) Register(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -34,7 +38,7 @@ func (a *AuthHandle) RegisterAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "登録しました"})
 }
 
-func (a *AuthHandle) LoginAPI(c *gin.Context) {
+func (a *AuthHandle) Login(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
