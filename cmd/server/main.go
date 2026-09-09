@@ -36,7 +36,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
-	userHandle := handle.NewUserHandle(userService, postService)
+	userHandle := handle.NewUserHandle(userService)
 
 	r := router.SetupRouter(authHandle, postHandle, middleware, userHandle)
 

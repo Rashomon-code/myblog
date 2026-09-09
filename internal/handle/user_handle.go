@@ -5,23 +5,27 @@ import (
 	"strconv"
 
 	"github.com/Rashomon-code/myblog/internal/model"
-	"github.com/Rashomon-code/myblog/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
-type UserHandle struct {
-	userService *service.UserService
-	postService *service.PostService
+type UserService interface {
+	GetProfile(userID int64) (*model.UserProfile, error)
+	UpdateRole(operatorID, userID int64, newRole string) error
+	GetAllUsers() ([]model.UserResponse, error)
+	UpdateProfile(userID int64, displayName, bio string) error
 }
 
-func NewUserHandle(userService *service.UserService, postService *service.PostService) *UserHandle {
+type UserHandle struct {
+	userService UserService
+}
+
+func NewUserHandle(userService UserService) *UserHandle {
 	return &UserHandle{
 		userService: userService,
-		postService: postService,
 	}
 }
 
-func (h *UserHandle) MyPageAPI(c *gin.Context) {
+func (h *UserHandle) MyPage(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
@@ -30,7 +34,7 @@ func (h *UserHandle) MyPageAPI(c *gin.Context) {
 
 	userID := userIDVal.(int64)
 
-	user, err := h.userService.GetProfileService(userID)
+	user, err := h.userService.GetProfile(userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザー情報が獲得できませんでした"})
 		return
@@ -62,7 +66,7 @@ func (h *UserHandle) GetUserProfile(c *gin.Context) {
 
 	isMe := userID != 0 && userID == ID
 
-	user, err := h.userService.GetProfileService(ID)
+	user, err := h.userService.GetProfile(ID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザー情報が獲得できませんでした"})
 		return
@@ -87,7 +91,7 @@ func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {
 		return
 	}
 
-	err = h.userService.UpdateRoleService(currentUserID, targetUserID, req.Role)
+	err = h.userService.UpdateRole(currentUserID, targetUserID, req.Role)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -110,7 +114,7 @@ func (h *UserHandle) UpdateProfileAPI(c *gin.Context) {
 		return
 	}
 
-	err := h.userService.UpdateProfileService(userID, profile.DisplayName, profile.Bio)
+	err := h.userService.UpdateProfile(userID, profile.DisplayName, profile.Bio)
 	if err != nil {
 		if err.Error() == "更新できませんでした" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -124,7 +128,7 @@ func (h *UserHandle) UpdateProfileAPI(c *gin.Context) {
 }
 
 func (h *UserHandle) GetAllUsersAPI(c *gin.Context) {
-	users, err := h.userService.GetAllUsersService()
+	users, err := h.userService.GetAllUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザーデータが取得できませんでした"})
 		return

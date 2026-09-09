@@ -66,7 +66,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.POST("/posts", postHandle.CreatePostAPI)
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
-			protected.GET("/me", userHandle.MyPageAPI)
+			protected.GET("/me", userHandle.MyPage)
 			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
 		}
 
