@@ -26,10 +26,17 @@ func (m *mockAuthService) Login(username, password string) (string, error) {
 	return m.loginFn(username, password)
 }
 
-func setupTestRouter(handler gin.HandlerFunc) *gin.Engine {
+func setupTestRouter(method, url string, handler gin.HandlerFunc, middlewares ...gin.HandlerFunc) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.POST("/test", handler)
+
+	for _, m := range middlewares {
+		if m != nil {
+			r.Use(m)
+		}
+	}
+
+	r.Handle(method, url, handler)
 	return r
 }
 
@@ -70,7 +77,7 @@ func TestRegister(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := &mockAuthService{registerFn: tt.mockRegisterFn}
 			h := NewAuthHandle(mockService)
-			r := setupTestRouter(h.Register)
+			r := setupTestRouter(http.MethodPost, "/test", h.Register)
 
 			req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(tt.reqBody))
 			req.Header.Set("Content-Type", "application/json")
@@ -122,7 +129,7 @@ func TestLogin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := &mockAuthService{loginFn: tt.mockLoginFn}
 			h := NewAuthHandle(mockService)
-			r := setupTestRouter(h.Login)
+			r := setupTestRouter(http.MethodPost, "/test", h.Login)
 			req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(tt.reqBody))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
