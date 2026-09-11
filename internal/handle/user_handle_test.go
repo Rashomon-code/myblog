@@ -18,8 +18,10 @@ import (
 type mockUserService struct {
 	UserService
 
-	getProfilefn func(userID int64) (*model.UserProfile, error)
-	updateRolefn func(operatorID, userID int64, newRole string) error
+	getProfilefn    func(userID int64) (*model.UserProfile, error)
+	updateRolefn    func(operatorID, userID int64, newRole string) error
+	updateProfilefn func(userID int64, displayName, bio string) error
+	getAllUsersfn   func() ([]model.UserResponse, error)
 }
 
 func (m *mockUserService) GetProfile(userID int64) (*model.UserProfile, error) {
@@ -28,6 +30,14 @@ func (m *mockUserService) GetProfile(userID int64) (*model.UserProfile, error) {
 
 func (m *mockUserService) UpdateRole(operatorID, userID int64, newRole string) error {
 	return m.updateRolefn(operatorID, userID, newRole)
+}
+
+func (m *mockUserService) UpdateProfile(userID int64, displayName, bio string) error {
+	return m.updateProfilefn(userID, displayName, bio)
+}
+
+func (m *mockUserService) GetAllUsers() ([]model.UserResponse, error) {
+	return m.getAllUsersfn()
 }
 
 func TestMypage(t *testing.T) {
@@ -203,7 +213,7 @@ func TestUpdateRole(t *testing.T) {
 			name:     "success",
 			paramID:  "100",
 			wantCode: http.StatusOK,
-			reqBody:  `{"role": "user"}`,
+			reqBody:  `{ "role": "user" }`,
 			middleware: func(c *gin.Context) {
 				c.Set("userID", int64(200))
 				c.Next()
@@ -228,7 +238,7 @@ func TestUpdateRole(t *testing.T) {
 		{
 			name:    "invalid JSON",
 			paramID: "100",
-			reqBody: `{"": ""}`,
+			reqBody: `{ "": "" }`,
 			middleware: func(ctx *gin.Context) {
 				ctx.Set("userID", int64(200))
 				ctx.Next()
@@ -239,7 +249,7 @@ func TestUpdateRole(t *testing.T) {
 			name:     "service error",
 			paramID:  "100",
 			wantCode: http.StatusBadRequest,
-			reqBody:  `{"role": "user"}`,
+			reqBody:  `{ "role": "user" }`,
 			middleware: func(c *gin.Context) {
 				c.Set("userID", int64(200))
 				c.Next()
@@ -261,6 +271,120 @@ func TestUpdateRole(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPut, "/test/"+tt.paramID, strings.NewReader(tt.reqBody))
 			r.ServeHTTP(w, req)
 			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
+func TestUpdateProfile(t *testing.T) {
+	tests := []struct {
+		name            string
+		wantCode        int
+		reqBody         string
+		middleware      func(*gin.Context)
+		updateProfilefn func(userID int64, displayName, bio string) error
+	}{
+		{
+			name:     "success",
+			wantCode: http.StatusOK,
+			reqBody:  `{ "display_name": "test", "bio": "test" }`,
+			middleware: func(ctx *gin.Context) {
+				ctx.Set("userID", int64(100))
+				ctx.Next()
+			},
+			updateProfilefn: func(userID int64, displayName, bio string) error {
+				assert.Equal(t, int64(100), userID)
+				assert.Equal(t, "test", displayName)
+				assert.Equal(t, "test", bio)
+				return nil
+			},
+		},
+		{
+			name:     "missing user id",
+			wantCode: http.StatusUnauthorized,
+			middleware: func(ctx *gin.Context) {
+				ctx.Next()
+			},
+		},
+		{
+			name:     "missing request",
+			wantCode: http.StatusBadRequest,
+			middleware: func(c *gin.Context) {
+				c.Set("userID", int64(100))
+				c.Next()
+			},
+		},
+		{
+			name:     "service error",
+			wantCode: http.StatusInternalServerError,
+			reqBody:  `{ "display_name": "test", "bio": "test" }`,
+			middleware: func(c *gin.Context) {
+				c.Set("userID", int64(100))
+				c.Next()
+			},
+			updateProfilefn: func(userID int64, displayName, bio string) error {
+				return errors.New("error")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockUserService{updateProfilefn: tt.updateProfilefn}
+			h := NewUserHandle(mockSvc)
+			r := setupTestRouter(http.MethodPut, "/test", h.UpdateProfile, tt.middleware)
+			req := httptest.NewRequest(http.MethodPut, "/test", strings.NewReader(tt.reqBody))
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
+func TestGetAllUser(t *testing.T) {
+	tests := []struct {
+		name          string
+		wantCode      int
+		wantID        int64
+		getAllUsersfn func() ([]model.UserResponse, error)
+	}{
+		{
+			name:     "success",
+			wantCode: http.StatusOK,
+			wantID:   int64(100),
+			getAllUsersfn: func() ([]model.UserResponse, error) {
+				response := []model.UserResponse{
+					{ID: int64(100), Username: "test", Role: ""},
+				}
+				return response, nil
+			},
+		},
+		{
+			name:     "fail",
+			wantCode: http.StatusInternalServerError,
+			getAllUsersfn: func() ([]model.UserResponse, error) {
+				return nil, errors.New("database error")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockUserService{getAllUsersfn: tt.getAllUsersfn}
+			h := NewUserHandle(mockSvc)
+			r := setupTestRouter(http.MethodGet, "/test", h.GetAllUsers)
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			assert.Equal(t, tt.wantCode, w.Code)
+
+			if w.Code == http.StatusOK {
+				var got []model.UserResponse
+				err := json.Unmarshal(w.Body.Bytes(), &got)
+
+				require.NoError(t, err)
+				require.Len(t, got, 1)
+				assert.Equal(t, tt.wantID, got[0].ID)
+			}
 		})
 	}
 }

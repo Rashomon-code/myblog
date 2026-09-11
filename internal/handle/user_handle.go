@@ -107,7 +107,7 @@ func (h *UserHandle) UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
 }
 
-func (h *UserHandle) UpdateProfileAPI(c *gin.Context) {
+func (h *UserHandle) UpdateProfile(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
@@ -134,7 +134,7 @@ func (h *UserHandle) UpdateProfileAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
 }
 
-func (h *UserHandle) GetAllUsersAPI(c *gin.Context) {
+func (h *UserHandle) GetAllUsers(c *gin.Context) {
 	users, err := h.userService.GetAllUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザーデータが取得できませんでした"})

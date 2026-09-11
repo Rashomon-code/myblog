@@ -67,14 +67,14 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 			protected.PUT("/posts/:id", postHandle.EditPostAPI)
 			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
 			protected.GET("/me", userHandle.MyPage)
-			protected.PUT("/me/profile", userHandle.UpdateProfileAPI)
+			protected.PUT("/me/profile", userHandle.UpdateProfile)
 		}
 
 		admin := api.Group("/admin")
 		admin.Use(mw.AuthMiddleware())
 		admin.Use(mw.RequireRole("admin"))
 		{
-			admin.GET("/users", userHandle.GetAllUsersAPI)
+			admin.GET("/users", userHandle.GetAllUsers)
 			admin.PUT("/users/:id/role", userHandle.UpdateRole)
 		}
 	}
