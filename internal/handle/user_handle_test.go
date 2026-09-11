@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -18,10 +19,15 @@ type mockUserService struct {
 	UserService
 
 	getProfilefn func(userID int64) (*model.UserProfile, error)
+	updateRolefn func(operatorID, userID int64, newRole string) error
 }
 
 func (m *mockUserService) GetProfile(userID int64) (*model.UserProfile, error) {
 	return m.getProfilefn(userID)
+}
+
+func (m *mockUserService) UpdateRole(operatorID, userID int64, newRole string) error {
+	return m.updateRolefn(operatorID, userID, newRole)
 }
 
 func TestMypage(t *testing.T) {
@@ -180,6 +186,81 @@ func TestGetUserProfile(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.wantIsMe, res.IsMe)
 			}
+		})
+	}
+}
+
+func TestUpdateRole(t *testing.T) {
+	tests := []struct {
+		name         string
+		paramID      string
+		wantCode     int
+		reqBody      string
+		middleware   func(*gin.Context)
+		updateRolefn func(operatorID, userID int64, newRole string) error
+	}{
+		{
+			name:     "success",
+			paramID:  "100",
+			wantCode: http.StatusOK,
+			reqBody:  `{"role": "user"}`,
+			middleware: func(c *gin.Context) {
+				c.Set("userID", int64(200))
+				c.Next()
+			},
+			updateRolefn: func(operatorID, userID int64, newRole string) error {
+				assert.Equal(t, int64(200), operatorID)
+				assert.Equal(t, int64(100), userID)
+				assert.Equal(t, "user", newRole)
+				return nil
+			},
+		},
+		{
+			name:     "invalid user ID",
+			paramID:  "abc",
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "missing user ID",
+			paramID:  "100",
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:    "invalid JSON",
+			paramID: "100",
+			reqBody: `{"": ""}`,
+			middleware: func(ctx *gin.Context) {
+				ctx.Set("userID", int64(200))
+				ctx.Next()
+			},
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "service error",
+			paramID:  "100",
+			wantCode: http.StatusBadRequest,
+			reqBody:  `{"role": "user"}`,
+			middleware: func(c *gin.Context) {
+				c.Set("userID", int64(200))
+				c.Next()
+			},
+			updateRolefn: func(operatorID, userID int64, newRole string) error {
+				return errors.New("permission denied")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockUserService{
+				updateRolefn: tt.updateRolefn,
+			}
+			h := NewUserHandle(mockSvc)
+			r := setupTestRouter(http.MethodPut, "/test/:id", h.UpdateRole, tt.middleware)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPut, "/test/"+tt.paramID, strings.NewReader(tt.reqBody))
+			r.ServeHTTP(w, req)
+			assert.Equal(t, tt.wantCode, w.Code)
 		})
 	}
 }

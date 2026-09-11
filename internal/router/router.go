@@ -75,7 +75,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		admin.Use(mw.RequireRole("admin"))
 		{
 			admin.GET("/users", userHandle.GetAllUsersAPI)
-			admin.PUT("/users/:id/role", userHandle.UpdateRoleAPI)
+			admin.PUT("/users/:id/role", userHandle.UpdateRole)
 		}
 	}
 

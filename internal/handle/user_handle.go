@@ -80,12 +80,19 @@ func (h *UserHandle) GetUserProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *UserHandle) UpdateRoleAPI(c *gin.Context) {
-	targetUserID, _ := strconv.ParseInt(c.Param("id"), 10, 64) // URL から id を引き出す
-	currentUserID := c.GetInt64("userID")                      // JWT から id を引き出す
+func (h *UserHandle) UpdateRole(c *gin.Context) {
+	targetUserID, err := strconv.ParseInt(c.Param("id"), 10, 64) // URL から id を引き出す
+	if err != nil || targetUserID <= int64(0) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なユーザーID"})
+		return
+	}
+	currentUserID := c.GetInt64("userID") // JWT から id を引き出す
+	if currentUserID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ログインしてください"})
+	}
 
 	var req model.UpdateRoleRequest
-	err := c.ShouldBindJSON(&req)
+	err = c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "無効な形式"})
 		return

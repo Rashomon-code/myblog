@@ -19,7 +19,7 @@ type User struct {
 }
 
 type UpdateRoleRequest struct {
-	Role string
+	Role string `json:"role" binding:"required"`
 }
 
 type UserResponse struct {
