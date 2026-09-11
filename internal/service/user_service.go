@@ -21,11 +21,11 @@ func NewUserService(repo UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) GetProfileService(userID int64) (*model.UserProfile, error) {
+func (s *UserService) GetProfile(userID int64) (*model.UserProfile, error) {
 	return s.repo.GetUserProfile(userID)
 }
 
-func (s *UserService) UpdateRoleService(operatorID, userID int64, newRole string) error {
+func (s *UserService) UpdateRole(operatorID, userID int64, newRole string) error {
 	if newRole != "admin" && newRole != "user" {
 		return errors.New("無効なタイプ")
 	}
@@ -37,10 +37,10 @@ func (s *UserService) UpdateRoleService(operatorID, userID int64, newRole string
 	return s.repo.UpdateRole(userID, newRole)
 }
 
-func (s *UserService) GetAllUsersService() ([]model.UserResponse, error) {
+func (s *UserService) GetAllUsers() ([]model.UserResponse, error) {
 	return s.repo.GetAllUsers()
 }
 
-func (s *UserService) UpdateProfileService(userID int64, displayName, bio string) error {
+func (s *UserService) UpdateProfile(userID int64, displayName, bio string) error {
 	return s.repo.UpdateUserProfile(userID, displayName, bio)
 }

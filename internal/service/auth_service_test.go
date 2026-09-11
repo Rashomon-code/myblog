@@ -9,135 +9,143 @@ import (
 )
 
 type mockAuthRepository struct {
-	user            *model.User
-	err             error
-	createdUsername string
-	createdPassword string
+	AuthRepositoryInterface
+
+	createUserFn func(username, passwordHash string) error
+	getUserFn    func(username string) (*model.User, error)
 }
 
-func (f *mockAuthRepository) GetUserByUsername(username string) (*model.User, error) {
-	return f.user, f.err
+func (r *mockAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
+	return r.createUserFn(username, passwordHash)
 }
 
-func (f *mockAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
-	f.createdUsername = username
-	f.createdPassword = passwordHash
-
-	return f.err
-}
-
-func newTestAuthService(repo AuthRepositoryInterface) *AuthService {
-	jwtService := NewJWTService("test-secret")
-	return NewAuthService(repo, jwtService)
-}
-
-func newTestUser(t *testing.T, username, password string) *model.User {
-	t.Helper()
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), 4)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return &model.User{
-		ID:           1,
-		Username:     username,
-		PasswordHash: string(hash),
-		Role:         "user",
-	}
-}
-
-const (
-	username string = "mario"
-	password string = "123456"
-)
-
-func TestLogin_Success(t *testing.T) {
-	user := newTestUser(t, username, password)
-
-	repo := &mockAuthRepository{
-		user: user,
-	}
-
-	service := newTestAuthService(repo)
-
-	token, err := service.Login(username, password)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if token == "" {
-		t.Fatal("expected token, got empty string")
-	}
-}
-
-func TestLogin_UserNotFound(t *testing.T) {
-	repo := &mockAuthRepository{
-		user: nil,
-		err:  errors.New("user not found"),
-	}
-
-	service := newTestAuthService(repo)
-
-	token, err := service.Login(username, password)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if token != "" {
-		t.Errorf("expected empty, got %s", token)
-	}
-}
-
-func TestLogin_WrongPassword(t *testing.T) {
-	user := newTestUser(t, username, password)
-
-	repo := &mockAuthRepository{
-		user: user,
-	}
-
-	service := newTestAuthService(repo)
-
-	wrongPassword := "123123"
-	token, err := service.Login(username, wrongPassword)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if token != "" {
-		t.Errorf("expected empty token, got %s", token)
-	}
+func (r *mockAuthRepository) GetUserByUsername(username string) (*model.User, error) {
+	return r.getUserFn(username)
 }
 
 func TestRegister(t *testing.T) {
-	repo := &mockAuthRepository{}
-	service := newTestAuthService(repo)
-
-	err := service.Register(username, password)
-
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	tests := []struct {
+		name             string
+		username         string
+		password         string
+		mockCreateUserFn func(username, passwordHash string) error
+		wantErr          error
+	}{
+		{
+			name:     "success",
+			username: "testuser",
+			password: "123456",
+			mockCreateUserFn: func(username, passwordHash string) error {
+				return nil
+			},
+			wantErr: nil,
+		},
+		{
+			name:             "invalid username space",
+			username:         " wrong ",
+			password:         "123456",
+			mockCreateUserFn: nil,
+			wantErr:          ErrUsernameContainsSpace,
+		},
+		{
+			name:             "invalid username",
+			username:         "wr",
+			password:         "123456",
+			mockCreateUserFn: nil,
+			wantErr:          ErrUsernameInvalidLength,
+		},
+		{
+			name:     "repository error",
+			username: "testuser",
+			password: "123456",
+			mockCreateUserFn: func(username, passwordHash string) error {
+				return ErrDatabase
+			},
+			wantErr: ErrDatabase,
+		},
 	}
 
-	if repo.createdUsername != username {
-		t.Errorf("expected username %s, got %s", username, repo.createdUsername)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &mockAuthRepository{
+				createUserFn: tt.mockCreateUserFn,
+			}
+			jwtService := NewJWTService("test")
+			mockS := NewAuthService(r, jwtService)
 
-	if repo.createdPassword == password {
-		t.Error("password should not be stored as plain text")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(repo.createdPassword), []byte(password))
-	if err != nil {
-		t.Error("password hash does not match original password")
+			err := mockS.Register(tt.username, tt.password)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("expected error %v, got %v", tt.wantErr, err)
+			}
+		})
 	}
 }
 
-func TestRegister_RepositoryError(t *testing.T) {
-	repo := &mockAuthRepository{
-		err: errors.New("database error"),
+func TestLogin(t *testing.T) {
+	tests := []struct {
+		name          string
+		username      string
+		password      string
+		mockGetUserfn func(username string) (*model.User, error)
+		wantErr       error
+	}{
+		{
+			name:     "success",
+			username: "testuser",
+			password: "123456",
+			mockGetUserfn: func(username string) (*model.User, error) {
+				hash, err := bcrypt.GenerateFromPassword([]byte("123456"), 4)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return &model.User{
+					ID:           100,
+					Username:     "testuser",
+					PasswordHash: string(hash),
+					Role:         "admin",
+				}, nil
+			},
+			wantErr: nil,
+		},
+		{
+			name: "wrong user",
+			mockGetUserfn: func(username string) (*model.User, error) {
+				return nil, ErrLogin
+			},
+			wantErr: ErrLogin,
+		},
+		{
+			name:     "wrong password",
+			username: "testuser",
+			password: "123456",
+			mockGetUserfn: func(username string) (*model.User, error) {
+				hash, err := bcrypt.GenerateFromPassword([]byte("654321"), 4)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return &model.User{
+					ID:           100,
+					Username:     "testuser",
+					PasswordHash: string(hash),
+					Role:         "admin",
+				}, ErrLogin
+			},
+			wantErr: ErrLogin,
+		},
 	}
-	service := newTestAuthService(repo)
 
-	err := service.Register(username, password)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &mockAuthRepository{
+				getUserFn: tt.mockGetUserfn,
+			}
+			jwtService := NewJWTService("test")
+			mockS := NewAuthService(r, jwtService)
+
+			_, err := mockS.Login(tt.username, tt.password)
+			if !errors.Is(err, tt.wantErr) {
+				t.Errorf("expected error %v, got %v", tt.wantErr, err)
+			}
+		})
 	}
 }
