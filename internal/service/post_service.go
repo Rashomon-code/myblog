@@ -36,7 +36,7 @@ func validateTitle(title string) (string, error) {
 	return title, nil
 }
 
-func (s *PostService) CreatePost(userID int64, title string, content string) error {
+func (s *PostService) CreatePost(userID int64, title, content string) error {
 	title, err := validateTitle(title)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (s *PostService) GetPostTitle(userID int64, page, pageSize int) ([]model.Ar
 	return s.repo.GetTitleByUserID(userID, page, pageSize)
 }
 
-func (s *PostService) PostDetailService(postID int64) (model.PostDetail, error) {
+func (s *PostService) PostDetail(postID int64) (model.PostDetail, error) {
 	return s.repo.GetPostDetail(postID)
 }
 
@@ -71,7 +71,7 @@ func (s *PostService) DeletePost(postID, userID int64, userRole string) error {
 	return s.repo.DeletePost(postID)
 }
 
-func (s *PostService) EditPost(postID int64, title string, content string, userID int64, userRole string) error {
+func (s *PostService) EditPost(postID, userID int64, title, content, userRole string) error {
 	post, err := s.repo.GetPostDetail(postID)
 	if err != nil {
 		return err
@@ -88,10 +88,10 @@ func (s *PostService) EditPost(postID int64, title string, content string, userI
 	return s.repo.EditPost(postID, title, content)
 }
 
-func (s *PostService) GetAllPostsService(page, pageSize int) ([]model.ArticleSummary, int64, error) {
+func (s *PostService) GetAllPosts(page, pageSize int) ([]model.ArticleSummary, int64, error) {
 	return s.repo.GetAllPosts(page, pageSize)
 }
 
-func (s *PostService) SearchPostService(keyword string) ([]model.ArticleSummary, error) {
+func (s *PostService) SearchPost(keyword string) ([]model.ArticleSummary, error) {
 	return s.repo.SearchPost(keyword)
 }

@@ -6,19 +6,28 @@ import (
 	"strings"
 
 	"github.com/Rashomon-code/myblog/internal/model"
-	"github.com/Rashomon-code/myblog/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
-type PostHandle struct {
-	postService *service.PostService
+type PostService interface {
+	CreatePost(userID int64, title, content string) error
+	GetPostTitle(userID int64, page, pageSize int) ([]model.ArticleSummary, int64, error)
+	PostDetail(postID int64) (model.PostDetail, error)
+	DeletePost(postID, userID int64, userRole string) error
+	EditPost(postID, userID int64, title, content, userRole string) error
+	GetAllPosts(page, pageSize int) ([]model.ArticleSummary, int64, error)
+	SearchPost(keyword string) ([]model.ArticleSummary, error)
 }
 
-func NewPostHandle(s *service.PostService) *PostHandle {
+type PostHandle struct {
+	postService PostService
+}
+
+func NewPostHandle(s PostService) *PostHandle {
 	return &PostHandle{postService: s}
 }
 
-func (h *PostHandle) CreatePostAPI(c *gin.Context) {
+func (h *PostHandle) CreatePost(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
@@ -38,10 +47,10 @@ func (h *PostHandle) CreatePostAPI(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"メッセージ": "投稿しました。"})
+	c.JSON(http.StatusCreated, gin.H{"message": "投稿しました。"})
 }
 
-func (h *PostHandle) PostDetailAPI(c *gin.Context) {
+func (h *PostHandle) PostDetail(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -49,7 +58,7 @@ func (h *PostHandle) PostDetailAPI(c *gin.Context) {
 		return
 	}
 
-	post, err := h.postService.PostDetailService(postID)
+	post, err := h.postService.PostDetail(postID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -60,7 +69,7 @@ func (h *PostHandle) PostDetailAPI(c *gin.Context) {
 	})
 }
 
-func (h *PostHandle) DeletePostAPI(c *gin.Context) {
+func (h *PostHandle) DeletePost(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -77,10 +86,10 @@ func (h *PostHandle) DeletePostAPI(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"メッセージ": "削除しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "削除しました"})
 }
 
-func (h *PostHandle) EditPostAPI(c *gin.Context) {
+func (h *PostHandle) EditPost(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -97,7 +106,7 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 	userID := c.GetInt64("userID")
 	userRole := c.GetString("role")
 
-	err = h.postService.EditPost(postID, req.Title, req.Content, userID, userRole)
+	err = h.postService.EditPost(postID, userID, req.Title, req.Content, userRole)
 	if err != nil {
 		if err.Error() == "更新できませんでした" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -107,10 +116,10 @@ func (h *PostHandle) EditPostAPI(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"メッセージ": "更新しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
 }
 
-func (h *PostHandle) PostsListAPI(c *gin.Context) {
+func (h *PostHandle) PostsList(c *gin.Context) {
 	page, err := strconv.Atoi(c.Query("page")) // strconv.Atoi stringをintに変換
 	if err != nil || page < 1 {
 		page = 1
@@ -121,7 +130,7 @@ func (h *PostHandle) PostsListAPI(c *gin.Context) {
 		pageSize = 10
 	}
 
-	posts, totalCount, err := h.postService.GetAllPostsService(page, pageSize)
+	posts, totalCount, err := h.postService.GetAllPosts(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
 		return
@@ -135,7 +144,7 @@ func (h *PostHandle) PostsListAPI(c *gin.Context) {
 	})
 }
 
-func (h *PostHandle) SearchPostAPI(c *gin.Context) {
+func (h *PostHandle) SearchPost(c *gin.Context) {
 	keyword := c.Query("keyword")
 	keyword = strings.TrimSpace(keyword)
 
@@ -144,7 +153,7 @@ func (h *PostHandle) SearchPostAPI(c *gin.Context) {
 		return
 	}
 
-	posts, err := h.postService.SearchPostService(keyword)
+	posts, err := h.postService.SearchPost(keyword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "検索処理に問題が起きました"})
 		return
