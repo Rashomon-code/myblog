@@ -162,7 +162,7 @@ func TestEditPost_Success(t *testing.T) {
 
 	service := NewPostService(mockRepo)
 
-	err := service.EditPost(100, "編集後タイトル", "編集後", 100, "user")
+	err := service.EditPost(100, 100, "編集後タイトル", "編集後", "user")
 	if err != nil {
 		t.Fatalf("unexpected err %v", err)
 	}

@@ -43,9 +43,9 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 
 	api := r.Group("/api")
 	{
-		api.GET("/posts", postHandle.PostsListAPI)
-		api.GET("/posts/:id", postHandle.PostDetailAPI)
-		api.GET("/posts/search", postHandle.SearchPostAPI)
+		api.GET("/posts", postHandle.PostsList)
+		api.GET("/posts/:id", postHandle.PostDetail)
+		api.GET("/posts/search", postHandle.SearchPost)
 		api.GET("/users/:id/posts", postHandle.GetUserPosts)
 
 		auth := api.Group("/auth")
@@ -63,9 +63,9 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		protected := api.Group("")
 		protected.Use(mw.AuthMiddleware())
 		{
-			protected.POST("/posts", postHandle.CreatePostAPI)
-			protected.PUT("/posts/:id", postHandle.EditPostAPI)
-			protected.DELETE("/posts/:id", postHandle.DeletePostAPI)
+			protected.POST("/posts", postHandle.CreatePost)
+			protected.PUT("/posts/:id", postHandle.EditPost)
+			protected.DELETE("/posts/:id", postHandle.DeletePost)
 			protected.GET("/me", userHandle.MyPage)
 			protected.PUT("/me/profile", userHandle.UpdateProfile)
 		}
