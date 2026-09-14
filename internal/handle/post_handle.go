@@ -147,7 +147,6 @@ func (h *PostHandle) PostsList(c *gin.Context) {
 func (h *PostHandle) SearchPost(c *gin.Context) {
 	keyword := c.Query("keyword")
 	keyword = strings.TrimSpace(keyword)
-
 	if keyword == "" {
 		c.JSON(http.StatusOK, []model.ArticleSummary{})
 		return
