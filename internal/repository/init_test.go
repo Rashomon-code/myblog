@@ -107,7 +107,8 @@ func TestInitAPP_success(t *testing.T) {
 }
 
 func TestInitAPP_Idempotency(t *testing.T) {
-	setupTestDB(t)
+	teardown := setupTestDB(t)
+	defer teardown()
 
 	db, err := InitAPP()
 	if err != nil {
@@ -129,7 +130,8 @@ func TestInitAPP_Idempotency(t *testing.T) {
 }
 
 func TestInitAPP_CascadeDelete(t *testing.T) {
-	setupTestDB(t)
+	teardown := setupTestDB(t)
+	defer teardown()
 	db, _ := InitAPP()
 
 	var userID int
