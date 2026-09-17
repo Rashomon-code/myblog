@@ -18,6 +18,7 @@ func InitAPP() (*sql.DB, error) {
 
 	err = initAdmin(db)
 	if err != nil {
+		db.Close()
 		return nil, err
 	}
 
