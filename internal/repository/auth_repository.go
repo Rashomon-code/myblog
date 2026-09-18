@@ -49,7 +49,6 @@ func (r *AuthRepository) CreateUserWithProfile(username, passwordHash string) er
 		return err
 	}
 
-	fmt.Println("登録完了しました。")
 	return nil
 }
 
