@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -38,74 +39,34 @@ func TestInitSQL_CreatesTables(t *testing.T) {
 	}
 }
 
-func TestInitAdmin_CreatesAdmin(t *testing.T) {
-	var username string
-	var role string
+func TestInitAdmin(t *testing.T) {
+	resetUsersTable(t)
+	defer resetUsersTable(t)
 
-	err := testDB.QueryRow(`
-		SELECT username, role
-		FROM users
-		WHERE role = 'admin'
-		LIMIT 1
-	`).Scan(&username, &role)
+	err := initAdmin(testDB)
 	if err != nil {
-		t.Fatalf("検索できませんでした: %v", err)
+		require.NoError(t, err, "admin 初期化できませんでした")
 	}
+
+	var username, role, passwordHash string
+	var count int
+
+	err = testDB.QueryRow(`
+		SELECT username, role, password_hash
+		FROM users
+		WHERE role = 'admin'	
+	`).Scan(&username, &role, &passwordHash)
+	require.NoError(t, err, "検索できませんでした")
 
 	assert.Equal(t, "admin", username)
 	assert.Equal(t, "admin", role)
-}
-
-func TestInitAdmin_HasAdmin(t *testing.T) {
-	var before int
-	var after int
-
-	err := testDB.QueryRow(`
-		SELECT COUNT(*)
-		FROM users
-		WHERE role = 'admin'
-	`).Scan(&before)
-	if err != nil {
-		t.Fatalf("検索できませんでした: %v", err)
-	}
-
-	if before != 1 {
-		t.Fatalf("expected admin count %q, got %q", 1, before)
-	}
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte("admin1234"))
+	assert.NoError(t, err, "パスワードが正しくありません")
 
 	err = initAdmin(testDB)
-	if err != nil {
-		t.Fatalf("admin 初期化できませんでした: %v", err)
-	}
+	require.NoError(t, err, "二回目の初期化に問題が起きました")
 
-	err = testDB.QueryRow(`
-		SELECT COUNT(*)
-		FROM users
-		WHERE role = 'admin'
-	`).Scan(&after)
-	if err != nil {
-		t.Fatalf("検索できませんでした: %v", err)
-	}
-
-	if after != 1 {
-		t.Fatalf("expected admin count %q, got %q", 1, after)
-	}
-}
-
-func TestInitAdmin_PasswordISCorrect(t *testing.T) {
-	var passwordHash string
-
-	err := testDB.QueryRow(`
-		SELECT password_hash	
-		FROM users
-		WHERE username = 'admin'
-	`).Scan(&passwordHash)
-	if err != nil {
-		t.Fatalf("検索できませんでした: %v", err)
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte("admin1234"))
-	if err != nil {
-		t.Fatalf("パスワードが正しくありません :%v", err)
-	}
+	err = testDB.QueryRow(`SELECT COUNT(*) FROM users WHERE role = 'admin'`).Scan(&count)
+	require.NoError(t, err)
+	assert.Equal(t, 1, count)
 }

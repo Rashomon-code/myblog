@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/moby/moby/api/types/network"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -78,4 +79,10 @@ func TestMain(m *testing.M) {
 	teardown()
 
 	os.Exit(code) //os.Exit は defer を執行しない！
+}
+
+func resetUsersTable(t *testing.T) {
+	t.Helper()
+	_, err := testDB.Exec("TRUNCATE TABLE user_profiles, users RESTART IDENTITY CASCADE;")
+	require.NoError(t, err, "リセットできませんでした")
 }
