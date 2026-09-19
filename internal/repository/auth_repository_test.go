@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestCreateUserWithProfile(t *testing.T) {
@@ -52,5 +53,34 @@ func TestCreateUserWithProfile(t *testing.T) {
 		err = testDB.QueryRow("SELECT COUNT(*) FROM user_profiles").Scan(&count)
 		require.NoError(t, err)
 		assert.Equal(t, 1, count)
+	})
+}
+
+func TearGetUserByUsername(t *testing.T){
+	repo := NewAuthRepository(testDB)
+
+	t.Run("success", func(t *testing.T){
+		resetUsersTable(t)
+		defer resetUsersTable(t)
+
+		err := initAdmin(testDB)
+		require.NoError(t, err)
+
+		user , err := repo.GetUserByUsername("admin")
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(1), user.ID)
+		assert.Equal(t, "amdin", user.Role)
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte("admin1234"))
+		assert.NoError(t, err)
+	})
+
+	t.Run("no user", func(t *testing.T){
+		resetUsersTable(t)
+		defer resetUsersTable(t)
+
+		user , err := repo.GetUserByUsername("admin")
+		assert.Error(t, err)
 	})
 }
