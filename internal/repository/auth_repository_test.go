@@ -56,17 +56,17 @@ func TestCreateUserWithProfile(t *testing.T) {
 	})
 }
 
-func TearGetUserByUsername(t *testing.T){
+func TearGetUserByUsername(t *testing.T) {
 	repo := NewAuthRepository(testDB)
 
-	t.Run("success", func(t *testing.T){
+	t.Run("success", func(t *testing.T) {
 		resetUsersTable(t)
 		defer resetUsersTable(t)
 
 		err := initAdmin(testDB)
 		require.NoError(t, err)
 
-		user , err := repo.GetUserByUsername("admin")
+		user, err := repo.GetUserByUsername("admin")
 		require.NoError(t, err)
 
 		assert.Equal(t, int64(1), user.ID)
@@ -76,11 +76,11 @@ func TearGetUserByUsername(t *testing.T){
 		assert.NoError(t, err)
 	})
 
-	t.Run("no user", func(t *testing.T){
+	t.Run("no user", func(t *testing.T) {
 		resetUsersTable(t)
 		defer resetUsersTable(t)
 
-		user , err := repo.GetUserByUsername("admin")
+		_, err := repo.GetUserByUsername("admin")
 		assert.Error(t, err)
 	})
 }
