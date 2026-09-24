@@ -56,7 +56,7 @@ func TestCreateUserWithProfile(t *testing.T) {
 	})
 }
 
-func TearGetUserByUsername(t *testing.T) {
+func TestGetUserByUsername(t *testing.T) {
 	repo := NewAuthRepository(testDB)
 
 	t.Run("success", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TearGetUserByUsername(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, int64(1), user.ID)
-		assert.Equal(t, "amdin", user.Role)
+		assert.Equal(t, "admin", user.Role)
 
 		err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte("admin1234"))
 		assert.NoError(t, err)
