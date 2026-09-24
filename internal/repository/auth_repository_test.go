@@ -13,8 +13,8 @@ func TestCreateUserWithProfile(t *testing.T) {
 	repo := NewAuthRepository(testDB)
 
 	t.Run("success", func(t *testing.T) {
-		resetUsersTable(t)
-		defer resetUsersTable(t)
+		resetTable(t)
+		defer resetTable(t)
 
 		err := repo.CreateUserWithProfile("testuser", "hashed_pw")
 		require.NoError(t, err)
@@ -36,8 +36,8 @@ func TestCreateUserWithProfile(t *testing.T) {
 	})
 
 	t.Run("false", func(t *testing.T) {
-		resetUsersTable(t)
-		defer resetUsersTable(t)
+		resetTable(t)
+		defer resetTable(t)
 
 		err := repo.CreateUserWithProfile("testuser", "hashed1")
 		require.NoError(t, err)
@@ -60,8 +60,8 @@ func TestGetUserByUsername(t *testing.T) {
 	repo := NewAuthRepository(testDB)
 
 	t.Run("success", func(t *testing.T) {
-		resetUsersTable(t)
-		defer resetUsersTable(t)
+		resetTable(t)
+		defer resetTable(t)
 
 		err := initAdmin(testDB)
 		require.NoError(t, err)
@@ -77,8 +77,8 @@ func TestGetUserByUsername(t *testing.T) {
 	})
 
 	t.Run("no user", func(t *testing.T) {
-		resetUsersTable(t)
-		defer resetUsersTable(t)
+		resetTable(t)
+		defer resetTable(t)
 
 		_, err := repo.GetUserByUsername("admin")
 		assert.Error(t, err)

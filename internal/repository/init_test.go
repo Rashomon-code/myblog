@@ -40,8 +40,8 @@ func TestInitSQL_CreatesTables(t *testing.T) {
 }
 
 func TestInitAdmin(t *testing.T) {
-	resetUsersTable(t)
-	defer resetUsersTable(t)
+	resetTable(t)
+	defer resetTable(t)
 
 	err := initAdmin(testDB)
 	if err != nil {
