@@ -171,6 +171,9 @@ func (r *PostRepository) SearchPost(keyword string) ([]model.ArticleSummary, err
 		return nil, err
 	}
 	posts, err := scanArticleSummaries(rows)
+	if err != nil {
+		return nil, err
+	}
 
 	return posts, nil
 }
