@@ -10,6 +10,7 @@ import (
 func TestGetUserProfile(t *testing.T) {
 	resetTable(t)
 	defer resetTable(t)
+
 	err := initAdmin(testDB)
 	require.NoError(t, err)
 
@@ -35,4 +36,45 @@ func TestGetUserProfile(t *testing.T) {
 		assert.Equal(t, "ユーザー 2", userProfile.DisplayName)
 		assert.Equal(t, "まだ何もありません", userProfile.Bio)
 	})
+}
+
+func TestUpdateRole(t *testing.T) {
+	resetTable(t)
+	defer resetTable(t)
+
+	authRepo := NewAuthRepository(testDB)
+	userRepo := NewUserRepository(testDB)
+	err := authRepo.CreateUserWithProfile("testuser", "hashedpass")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		userID  int64
+		wantErr bool
+	}{
+		{
+			name:   "success",
+			userID: 1,
+		},
+		{
+			name:    "invalid user",
+			userID:  10,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := userRepo.UpdateRole(tt.userID, "admin")
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGetAllUsers(t *testing.T) {
+
 }
