@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Rashomon-code/myblog/internal/service"
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/gin-gonic/gin"
 )
 
@@ -119,7 +119,7 @@ func TestLogin(t *testing.T) {
 			name:    "invalid user",
 			reqBody: `{"username": "testname", "password": "654321"}`,
 			mockLoginFn: func(username, password string) (string, error) {
-				return "", service.ErrLogin
+				return "", apperror.ErrInvalidCredentials
 			},
 			wantCode: http.StatusUnauthorized,
 		},

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -45,23 +46,23 @@ func TestRegister(t *testing.T) {
 			username:         " wrong ",
 			password:         "123456",
 			mockCreateUserFn: nil,
-			wantErr:          ErrUsernameContainsSpace,
+			wantErr:          apperror.ErrUsernameContainsSpace,
 		},
 		{
 			name:             "invalid username",
 			username:         "wr",
 			password:         "123456",
 			mockCreateUserFn: nil,
-			wantErr:          ErrUsernameInvalidLength,
+			wantErr:          apperror.ErrUsernameInvalidLength,
 		},
 		{
 			name:     "repository error",
 			username: "testuser",
 			password: "123456",
 			mockCreateUserFn: func(username, passwordHash string) error {
-				return ErrDatabase
+				return apperror.ErrDatabase
 			},
-			wantErr: ErrDatabase,
+			wantErr: apperror.ErrDatabase,
 		},
 	}
 
@@ -110,9 +111,9 @@ func TestLogin(t *testing.T) {
 		{
 			name: "wrong user",
 			mockGetUserfn: func(username string) (*model.User, error) {
-				return nil, ErrLogin
+				return nil, apperror.ErrInvalidCredentials
 			},
-			wantErr: ErrLogin,
+			wantErr: apperror.ErrInvalidCredentials,
 		},
 		{
 			name:     "wrong password",
@@ -128,9 +129,9 @@ func TestLogin(t *testing.T) {
 					Username:     "testuser",
 					PasswordHash: string(hash),
 					Role:         "admin",
-				}, ErrLogin
+				}, apperror.ErrInvalidCredentials
 			},
-			wantErr: ErrLogin,
+			wantErr: apperror.ErrInvalidCredentials,
 		},
 	}
 

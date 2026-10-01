@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -25,34 +24,32 @@ func (a *AuthHandle) Register(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	err := a.authService.Register(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "登録しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "user registered successfully"})
 }
 
 func (a *AuthHandle) Login(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	token, err := a.authService.Login(req.Username, req.Password)
-
 	if err != nil {
-		log.Println(err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "ログインしました", "token": token})
+	c.JSON(http.StatusOK, gin.H{"message": "login successfully", "token": token})
 }
