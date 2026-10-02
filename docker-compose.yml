@@ -10,6 +10,7 @@ services:
     depends_on:
       - db
     environment:
+      JWT_SECRET: ${JWT_SECRET}
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER}

@@ -31,6 +31,7 @@ func RespondWithError(c *gin.Context, err error) {
 	// 403
 	if errors.Is(err, apperror.ErrForbidden) {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
 	}
 
 	// 404
