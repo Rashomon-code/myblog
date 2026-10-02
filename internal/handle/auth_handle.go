@@ -3,6 +3,7 @@ package handle
 import (
 	"net/http"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +25,7 @@ func (a *AuthHandle) Register(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (a *AuthHandle) Login(c *gin.Context) {
 	var req model.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 

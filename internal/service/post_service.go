@@ -1,14 +1,12 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 )
-
-var ErrForbidden = errors.New("権限がありません")
-var ErrInvalidTitle = errors.New("タイトルが入力されていません")
 
 type PostRepository interface {
 	CreatePost(userID int64, title string, content string) error
@@ -31,7 +29,7 @@ func NewPostService(repo PostRepository) *PostService {
 func validateTitle(title string) (string, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return "", ErrInvalidTitle
+		return "", apperror.ErrInvalidTitle
 	}
 	return title, nil
 }
@@ -55,7 +53,17 @@ func (s *PostService) GetPostTitle(userID int64, page, pageSize int) ([]model.Ar
 }
 
 func (s *PostService) PostDetail(postID int64) (model.PostDetail, error) {
-	return s.repo.GetPostDetail(postID)
+	post, err := s.repo.GetPostDetail(postID)
+	if err != nil {
+		return model.PostDetail{}, nil
+	}
+
+	if post.DisplayName == nil || *post.DisplayName == "" {
+		displayname := fmt.Sprintf("ユーザー %d", post.UserID)
+		post.DisplayName = &displayname
+	}
+
+	return post, nil
 }
 
 func (s *PostService) DeletePost(postID, userID int64, userRole string) error {
@@ -65,7 +73,7 @@ func (s *PostService) DeletePost(postID, userID int64, userRole string) error {
 	}
 
 	if post.UserID != userID && userRole != "admin" {
-		return ErrForbidden
+		return apperror.ErrForbidden
 	}
 
 	return s.repo.DeletePost(postID)
@@ -78,7 +86,7 @@ func (s *PostService) EditPost(postID, userID int64, title, content, userRole st
 	}
 
 	if post.UserID != userID && userRole != "admin" {
-		return ErrForbidden
+		return apperror.ErrForbidden
 	}
 
 	if title, err = validateTitle(title); err != nil {

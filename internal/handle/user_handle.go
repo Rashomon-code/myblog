@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +29,7 @@ func NewUserHandle(userService UserService) *UserHandle {
 func (h *UserHandle) MyPage(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		RespondWithError(c, apperror.ErrUnauthorized)
 		return
 	}
 
@@ -36,7 +37,7 @@ func (h *UserHandle) MyPage(c *gin.Context) {
 
 	user, err := h.userService.GetProfile(userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザー情報が獲得できませんでした"})
+		RespondWithError(c, err)
 		return
 	}
 
@@ -46,7 +47,7 @@ func (h *UserHandle) MyPage(c *gin.Context) {
 func (h *UserHandle) GetUserProfile(c *gin.Context) {
 	ID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		RespondWithError(c, apperror.ErrUnauthorized)
 		return
 	}
 
@@ -68,7 +69,7 @@ func (h *UserHandle) GetUserProfile(c *gin.Context) {
 
 	user, err := h.userService.GetProfile(ID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ユーザー情報が獲得できませんでした"})
+		RespondWithError(c, err)
 		return
 	}
 
@@ -83,61 +84,58 @@ func (h *UserHandle) GetUserProfile(c *gin.Context) {
 func (h *UserHandle) UpdateRole(c *gin.Context) {
 	targetUserID, err := strconv.ParseInt(c.Param("id"), 10, 64) // URL から id を引き出す
 	if err != nil || targetUserID <= int64(0) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なユーザーID"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 	currentUserID := c.GetInt64("userID") // JWT から id を引き出す
 	if currentUserID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ログインしてください"})
+		RespondWithError(c, apperror.ErrUnauthorized)
+		return
 	}
 
 	var req model.UpdateRoleRequest
 	err = c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "無効な形式"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
 	err = h.userService.UpdateRole(currentUserID, targetUserID, req.Role)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "role updated successfully"})
 }
 
 func (h *UserHandle) UpdateProfile(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		RespondWithError(c, apperror.ErrUnauthorized)
 		return
 	}
 	userID := userIDVal.(int64)
 
 	var profile model.ProfileRequest
 	if err := c.ShouldBindJSON(&profile); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
 	err := h.userService.UpdateProfile(userID, profile.DisplayName, profile.Bio)
 	if err != nil {
-		if err.Error() == "更新できませんでした" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新できませんでした: " + err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "profile updated successfully"})
 }
 
 func (h *UserHandle) GetAllUsers(c *gin.Context) {
 	users, err := h.userService.GetAllUsers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザーデータが取得できませんでした"})
+		RespondWithError(c, err)
 		return
 	}
 

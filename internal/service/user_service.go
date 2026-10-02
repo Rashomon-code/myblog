@@ -1,8 +1,7 @@
 package service
 
 import (
-	"errors"
-
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 )
 
@@ -27,11 +26,11 @@ func (s *UserService) GetProfile(userID int64) (*model.UserProfile, error) {
 
 func (s *UserService) UpdateRole(operatorID, userID int64, newRole string) error {
 	if newRole != "admin" && newRole != "user" {
-		return errors.New("無効なタイプ")
+		return apperror.ErrInvalidRole
 	}
 
 	if operatorID == userID {
-		return errors.New("自分の権限を変更することができません")
+		return apperror.ErrSelfRoleChange
 	}
 
 	return s.repo.UpdateRole(userID, newRole)

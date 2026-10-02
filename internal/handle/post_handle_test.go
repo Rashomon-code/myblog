@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -292,7 +293,7 @@ func TestEditPost(t *testing.T) {
 				c.Next()
 			},
 			editPostfn: func(postID, userID int64, title, content, userRole string) error {
-				return errors.New("更新できませんでした")
+				return apperror.ErrUserNotFound
 			},
 		},
 	}

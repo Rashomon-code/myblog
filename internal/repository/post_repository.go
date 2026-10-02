@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 )
 
@@ -23,7 +24,7 @@ func (r *PostRepository) CreatePost(userID int64, title string, content string) 
 	`
 	_, err := r.db.Exec(insertSQL, userID, title, content)
 	if err != nil {
-		return fmt.Errorf("投稿失敗: %w", err)
+		return fmt.Errorf("failed to insert post for user %d: %w", userID, err)
 	}
 
 	return nil
@@ -34,7 +35,7 @@ func (r *PostRepository) GetTitleByUserID(userID int64, page, pageSize int) ([]m
 	countSQL := `SELECT COUNT(*) FROM posts WHERE user_id = $1`
 	err := r.db.QueryRow(countSQL, userID).Scan(&totalCount)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to count posts by user %d: %w", userID, err)
 	}
 
 	offset := (page - 1) * pageSize
@@ -48,7 +49,7 @@ func (r *PostRepository) GetTitleByUserID(userID int64, page, pageSize int) ([]m
 	`
 	rows, err := r.db.Query(selectSQL, userID, pageSize, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to query posts by user %d: %w", userID, err)
 	}
 
 	posts, err := scanArticleSummaries(rows)
@@ -70,12 +71,10 @@ func (r *PostRepository) GetPostDetail(postID int64) (model.PostDetail, error) {
 	row := r.db.QueryRow(selectSQL, postID)
 	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.UserID, &p.CreatedAt, &p.DisplayName)
 	if err != nil {
-		return model.PostDetail{}, fmt.Errorf("文章が読み取れませんでした: %w", err)
-	}
-
-	if p.DisplayName == nil || *p.DisplayName == "" {
-		displayName := fmt.Sprintf("ユーザー%d", p.UserID)
-		p.DisplayName = &displayName
+		if errors.Is(err, sql.ErrNoRows) {
+			return model.PostDetail{}, apperror.ErrPostNotFound
+		}
+		return model.PostDetail{}, fmt.Errorf("failed to scan post detail for post %d: %w", postID, err)
 	}
 
 	return p, nil
@@ -86,15 +85,15 @@ func (r *PostRepository) DeletePost(postID int64) error {
 
 	result, err := r.db.Exec(deleteSQL, postID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute delete post %d: %w", postID, err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check rows affected on delete post %d: %w", postID, err)
 	}
 	if rows == 0 {
-		return errors.New("何も削除していませんでした")
+		return apperror.ErrPostNotFound
 	}
 
 	return nil
@@ -105,37 +104,18 @@ func (r *PostRepository) EditPost(postID int64, title string, content string) er
 
 	result, err := r.db.Exec(updateSQL, title, content, postID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute update post %d: %w", postID, err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check rows affected on update post %d: %w", postID, err)
 	}
 	if rows == 0 {
-		return errors.New("更新できませんでした")
+		return apperror.ErrPostNotFound
 	}
 
 	return nil
-}
-
-func scanArticleSummaries(rows *sql.Rows) ([]model.ArticleSummary, error) {
-	defer rows.Close()
-
-	var posts []model.ArticleSummary
-	for rows.Next() {
-		var a model.ArticleSummary
-		if err := rows.Scan(&a.ID, &a.Title, &a.CreatedAt); err != nil {
-			return nil, err
-		}
-		posts = append(posts, a)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return posts, nil
 }
 
 func (r *PostRepository) GetAllPosts(page, pageSize int) ([]model.ArticleSummary, int64, error) {
@@ -145,14 +125,14 @@ func (r *PostRepository) GetAllPosts(page, pageSize int) ([]model.ArticleSummary
 	countSQL := `SELECT COUNT(*) FROM posts`
 	err := r.db.QueryRow(countSQL).Scan(&totalCount)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to count all posts %w", err)
 	}
 
 	selectSQL := `SELECT id, title, created_at FROM posts ORDER BY created_at DESC LIMIT $1 OFFSET $2`
 
 	rows, err := r.db.Query(selectSQL, pageSize, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to query all posts: %w", err)
 	}
 
 	posts, err := scanArticleSummaries(rows)
@@ -168,11 +148,30 @@ func (r *PostRepository) SearchPost(keyword string) ([]model.ArticleSummary, err
 
 	rows, err := r.db.Query(selectSQL, keyword)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to search posts with keyword '%s': %w", keyword, err)
 	}
 	posts, err := scanArticleSummaries(rows)
 	if err != nil {
 		return nil, err
+	}
+
+	return posts, nil
+}
+
+func scanArticleSummaries(rows *sql.Rows) ([]model.ArticleSummary, error) {
+	defer rows.Close()
+
+	posts := make([]model.ArticleSummary, 0)
+	for rows.Next() {
+		var a model.ArticleSummary
+		if err := rows.Scan(&a.ID, &a.Title, &a.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan article summary row: %w", err)
+		}
+		posts = append(posts, a)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
 	}
 
 	return posts, nil
