@@ -3,6 +3,7 @@ package repository
 import (
 	"testing"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -120,7 +121,7 @@ func TestGetPostDetail(t *testing.T) {
 		post, err := postRepo.GetPostDetail(1)
 		require.NoError(t, err)
 		assert.Equal(t, "test", post.Title)
-		assert.Equal(t, "ユーザー1", *post.DisplayName)
+		assert.Equal(t, "", post.Content)
 	})
 
 	t.Run("invalid post", func(t *testing.T) {
@@ -155,7 +156,7 @@ func TestDeletePost(t *testing.T) {
 
 		err := postRepo.DeletePost(2)
 		require.Error(t, err)
-		assert.Equal(t, "何も削除していませんでした", err.Error())
+		assert.Equal(t, apperror.ErrPostNotFound, err)
 	})
 }
 
@@ -190,7 +191,7 @@ func TestEditPost(t *testing.T) {
 
 		err := postRepo.EditPost(1, "編集後", "編集後コンテンツ")
 		require.Error(t, err)
-		assert.Equal(t, "更新できませんでした", err.Error())
+		assert.Equal(t, apperror.ErrPostNotFound, err)
 	})
 }
 

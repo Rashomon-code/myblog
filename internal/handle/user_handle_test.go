@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -73,14 +74,14 @@ func TestMypage(t *testing.T) {
 		},
 		{
 			name:     "wrong user",
-			wantCode: http.StatusBadRequest,
+			wantCode: http.StatusNotFound,
 			middleware: func(c *gin.Context) {
 				c.Set("userID", int64(1000))
 				c.Next()
 			},
 			getProfilefn: func(userID int64) (*model.UserProfile, error) {
 				if userID != 100 {
-					return nil, fmt.Errorf("unexpected userID: %d", userID)
+					return nil, apperror.ErrUserNotFound
 				}
 				return &model.UserProfile{UserID: userID}, nil
 			},
@@ -167,13 +168,13 @@ func TestGetUserProfile(t *testing.T) {
 		{
 			name:     "user not found",
 			paramID:  "100",
-			wantCode: http.StatusBadRequest,
+			wantCode: http.StatusNotFound,
 			wantIsMe: false,
 			middleware: func(c *gin.Context) {
 				c.Next()
 			},
 			getProfilefn: func(userID int64) (*model.UserProfile, error) {
-				return nil, errors.New("user not found")
+				return nil, apperror.ErrUserNotFound
 			},
 		},
 	}
@@ -248,7 +249,7 @@ func TestUpdateRole(t *testing.T) {
 		{
 			name:     "service error",
 			paramID:  "100",
-			wantCode: http.StatusBadRequest,
+			wantCode: http.StatusInternalServerError,
 			reqBody:  `{ "role": "user" }`,
 			middleware: func(c *gin.Context) {
 				c.Set("userID", int64(200))

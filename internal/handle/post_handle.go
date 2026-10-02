@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 )
@@ -30,37 +31,37 @@ func NewPostHandle(s PostService) *PostHandle {
 func (h *PostHandle) CreatePost(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザーが見つかりませんでした"})
+		RespondWithError(c, apperror.ErrUnauthorized)
 		return
 	}
 	userID := userIDVal.(int64)
 
 	var req model.UpdatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "入力に誤りがございます: " + err.Error()})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
 	err := h.postService.CreatePost(userID, req.Title, req.Content)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "投稿しました。"})
+	c.JSON(http.StatusCreated, gin.H{"message": "post created successfully"})
 }
 
 func (h *PostHandle) PostDetail(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
 	post, err := h.postService.PostDetail(postID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
@@ -73,7 +74,7 @@ func (h *PostHandle) DeletePost(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
@@ -82,24 +83,24 @@ func (h *PostHandle) DeletePost(c *gin.Context) {
 
 	err = h.postService.DeletePost(postID, userID, userRole)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "削除しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "post deleted successfully"})
 }
 
 func (h *PostHandle) EditPost(c *gin.Context) {
 	idStr := c.Param("id")
 	postID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが間違っています"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
 	var req model.UpdatePostRequest
 	if err := c.ShouldBind(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "入力に誤りがございます"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
@@ -108,15 +109,11 @@ func (h *PostHandle) EditPost(c *gin.Context) {
 
 	err = h.postService.EditPost(postID, userID, req.Title, req.Content, userRole)
 	if err != nil {
-		if err.Error() == "更新できませんでした" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新できませんでした: " + err.Error()})
+		RespondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "更新しました"})
+	c.JSON(http.StatusOK, gin.H{"message": "post updated successfully"})
 }
 
 func (h *PostHandle) PostsList(c *gin.Context) {
@@ -132,7 +129,7 @@ func (h *PostHandle) PostsList(c *gin.Context) {
 
 	posts, totalCount, err := h.postService.GetAllPosts(page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
+		RespondWithError(c, err)
 		return
 	}
 
@@ -154,12 +151,8 @@ func (h *PostHandle) SearchPost(c *gin.Context) {
 
 	posts, err := h.postService.SearchPost(keyword)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "検索処理に問題が起きました"})
+		RespondWithError(c, err)
 		return
-	}
-
-	if posts == nil {
-		posts = []model.ArticleSummary{}
 	}
 
 	c.JSON(http.StatusOK, posts)
@@ -169,7 +162,7 @@ func (h *PostHandle) GetUserPosts(c *gin.Context) {
 	idStr := c.Param("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "IDが存在していません"})
+		RespondWithError(c, apperror.ErrInvalidInput)
 		return
 	}
 
@@ -185,7 +178,7 @@ func (h *PostHandle) GetUserPosts(c *gin.Context) {
 
 	posts, totalCount, err := h.postService.GetPostTitle(userID, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ポスト取得できませんでした"})
+		RespondWithError(c, err)
 		return
 	}
 

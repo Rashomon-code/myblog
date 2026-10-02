@@ -1,20 +1,13 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"unicode"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	ErrUsernameInvalidLength = errors.New("username must be between 3 and 20 characters")
-	ErrUsernameContainsSpace = errors.New("username cannot contain spaces")
-	ErrDatabase              = errors.New("database error")
-	ErrLogin                 = errors.New("入力に誤りがございます")
 )
 
 type AuthRepositoryInterface interface {
@@ -42,11 +35,11 @@ func NewAuthService(repo AuthRepositoryInterface, jwt *JWTService) *AuthService 
 
 func validateUsername(username string) error {
 	if len(username) < 3 || len(username) > 20 {
-		return ErrUsernameInvalidLength
+		return apperror.ErrUsernameInvalidLength
 	}
 
 	if strings.IndexFunc(username, unicode.IsSpace) != -1 {
-		return ErrUsernameContainsSpace
+		return apperror.ErrUsernameContainsSpace
 	}
 
 	return nil
@@ -58,9 +51,9 @@ func (s *AuthService) Register(username, password string) error {
 		return err
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 4) //学習のため、最低レベルを使用します
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost) //学習のため、最低レベルを使用します
 	if err != nil {
-		return fmt.Errorf("登録できませんでした: %w", err)
+		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	err = s.repo.CreateUserWithProfile(username, string(passwordHash))
@@ -70,12 +63,12 @@ func (s *AuthService) Register(username, password string) error {
 func (s *AuthService) Login(username, password string) (string, error) {
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
-		return "", ErrLogin
+		return "", apperror.ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", ErrLogin
+		return "", apperror.ErrInvalidCredentials
 	}
 
 	token, err := s.jwt.GenerateToken(username, user.ID, user.Role)

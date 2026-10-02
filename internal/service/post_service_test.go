@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
 )
 
@@ -36,8 +37,8 @@ func TestValidateTitle(t *testing.T) {
 	testCases := []string{"", " ", "\n", "  \n"}
 	for _, tc := range testCases {
 		_, err := validateTitle(tc)
-		if !errors.Is(err, ErrInvalidTitle) {
-			t.Errorf("expected %v, got %v", ErrInvalidTitle, err)
+		if !errors.Is(err, apperror.ErrInvalidTitle) {
+			t.Errorf("expected %v, got %v", apperror.ErrInvalidTitle, err)
 		}
 	}
 }
@@ -46,8 +47,8 @@ func TestCreatePost_InvalidTitle(t *testing.T) {
 
 	service := NewPostService(nil)
 	err := service.CreatePost(1, "", "content")
-	if !errors.Is(err, ErrInvalidTitle) {
-		t.Errorf("expected %v, got %v", ErrInvalidTitle, err)
+	if !errors.Is(err, apperror.ErrInvalidTitle) {
+		t.Errorf("expected %v, got %v", apperror.ErrInvalidTitle, err)
 	}
 }
 
@@ -136,7 +137,7 @@ func TestDeletePost_Forbidden(t *testing.T) {
 	service := NewPostService(mockRepo)
 
 	err := service.DeletePost(1, 200, "user")
-	if !errors.Is(err, ErrForbidden) {
+	if !errors.Is(err, apperror.ErrForbidden) {
 		t.Errorf("expected ErrForbidden, got %v", err)
 	}
 }

@@ -2,9 +2,12 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthRepository struct {
@@ -31,7 +34,12 @@ func (r *AuthRepository) CreateUserWithProfile(username, passwordHash string) er
 	var userID int64
 	err = tx.QueryRow(insertSQL, username, passwordHash).Scan(&userID)
 	if err != nil {
-		return fmt.Errorf("登録にエラーが起きました: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return apperror.ErrAlreadyExists
+		}
+
+		return fmt.Errorf("failed to insert user: %w", err)
 	}
 
 	insertProfileSQL := `
@@ -41,12 +49,12 @@ func (r *AuthRepository) CreateUserWithProfile(username, passwordHash string) er
 	defaultName := fmt.Sprintf("ユーザー %d", userID)
 	_, err = tx.Exec(insertProfileSQL, userID, defaultName, "")
 	if err != nil {
-		return fmt.Errorf("プロフィール設定できませんでした: %w", err)
+		return fmt.Errorf("failed to insert user profile: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
@@ -63,7 +71,10 @@ func (r *AuthRepository) GetUserByUsername(username string) (*model.User, error)
 		&user.Role,
 	)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperror.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to query user by username: %w", err)
 	}
 
 	return &user, nil
