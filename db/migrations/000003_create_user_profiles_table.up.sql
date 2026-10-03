@@ -4,3 +4,4 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     bio TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+-- FOREIGN KEY, PRIMARY KEY など table constraints は最後に書かなければなりません。

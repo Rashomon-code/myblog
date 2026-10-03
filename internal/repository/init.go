@@ -6,13 +6,20 @@ import (
 	"log"
 	"os"
 
+	migrator "github.com/Rashomon-code/myblog/db"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func InitAPP() (*sql.DB, error) {
-	db, err := initSQL()
+	db, err := NewDB()
 	if err != nil {
+		return nil, err
+	}
+
+	err = migrator.RunMigrations(db)
+	if err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -25,7 +32,7 @@ func InitAPP() (*sql.DB, error) {
 	return db, nil
 }
 
-func initSQL() (*sql.DB, error) {
+func NewDB() (*sql.DB, error) {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
@@ -40,41 +47,10 @@ func initSQL() (*sql.DB, error) {
 	}
 
 	if err := db.Ping(); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("データベースの接続に問題が起きました: %w", err)
 	}
 	fmt.Println("PostgreSQL に接続済み")
-
-	createTableSQL := `
-	CREATE TABLE IF NOT EXISTS users(
-		id SERIAL PRIMARY KEY,
-		username TEXT UNIQUE NOT NULL,
-		password_hash TEXT NOT NULL,
-		role TEXT NOT NULL DEFAULT 'user'
-	);
-
-	CREATE TABLE IF NOT EXISTS posts(
-		id SERIAL PRIMARY KEY,
-		title TEXT NOT NULL,
-		content TEXT NOT NULL,
-		user_id INTEGER NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (user_id) REFERENCES users(id)
-	);
-
-	CREATE TABLE IF NOT EXISTS user_profiles(
-		user_id INTEGER PRIMARY KEY,
-		display_name TEXT,
-		bio TEXT,
-		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-	);
-	`
-	//FOREIGN KEY, PRIMARY KEY など table constraints は最後に書かなければなりません。
-
-	_, err = db.Exec(createTableSQL)
-	if err != nil {
-		return nil, fmt.Errorf("テーブルが作成できませんでした: %w", err)
-	}
-	fmt.Println("テーブルを作成済み。")
 
 	return db, nil
 }
