@@ -3,6 +3,7 @@ package repository
 import (
 	"testing"
 
+	migrator "github.com/Rashomon-code/myblog/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +20,10 @@ func TestInitAPP_success(t *testing.T) {
 	}
 }
 
-func TestInitSQL_CreatesTables(t *testing.T) {
+func TestInitAPP_CreatesTables(t *testing.T) {
+	err := migrator.RunMigrations(testDB)
+	require.NoError(t, err)
+
 	tables := []string{"users", "posts", "user_profiles"}
 	query := `SELECT EXISTS (
 		SELECT FROM information_schema.tables
@@ -31,9 +35,7 @@ func TestInitSQL_CreatesTables(t *testing.T) {
 			var exists bool
 			row := testDB.QueryRow(query, table)
 			err := row.Scan(&exists)
-			if err != nil {
-				t.Fatalf("テーブル %s が確認できませんでした: %v", table, err)
-			}
+			require.NoError(t, err)
 			assert.True(t, exists)
 		})
 	}
