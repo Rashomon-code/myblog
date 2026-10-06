@@ -18,7 +18,7 @@ func NewAuthHandle(s AuthService) *AuthHandle {
 
 type AuthService interface {
 	Register(username, password string) error
-	Login(username, password string) (string, error)
+	Login(username, password string) (*model.TokenPair, error)
 }
 
 func (a *AuthHandle) Register(c *gin.Context) {

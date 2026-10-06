@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Rashomon-code/myblog/internal/apperror"
+	"github.com/Rashomon-code/myblog/internal/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,14 +16,14 @@ type mockAuthService struct {
 	AuthService
 
 	registerFn func(username string, password string) error
-	loginFn    func(username, password string) (string, error)
+	loginFn    func(username, password string) (*model.TokenPair, error)
 }
 
 func (m *mockAuthService) Register(username string, password string) error {
 	return m.registerFn(username, password)
 }
 
-func (m *mockAuthService) Login(username, password string) (string, error) {
+func (m *mockAuthService) Login(username, password string) (*model.TokenPair, error) {
 	return m.loginFn(username, password)
 }
 
@@ -96,30 +97,30 @@ func TestLogin(t *testing.T) {
 	tests := []struct {
 		name        string
 		reqBody     string
-		mockLoginFn func(username, password string) (string, error)
+		mockLoginFn func(username, password string) (*model.TokenPair, error)
 		wantCode    int
 	}{
 		{
 			name:    "success",
 			reqBody: `{"username": "testname", "password": "123456"}`,
-			mockLoginFn: func(username, password string) (string, error) {
-				return "", nil
+			mockLoginFn: func(username, password string) (*model.TokenPair, error) {
+				return nil, nil
 			},
 			wantCode: http.StatusOK,
 		},
 		{
 			name:    "invalid json body",
 			reqBody: `{"username": "testname", "password": }`,
-			mockLoginFn: func(username, password string) (string, error) {
-				return "", nil
+			mockLoginFn: func(username, password string) (*model.TokenPair, error) {
+				return nil, nil
 			},
 			wantCode: http.StatusBadRequest,
 		},
 		{
 			name:    "invalid user",
 			reqBody: `{"username": "testname", "password": "654321"}`,
-			mockLoginFn: func(username, password string) (string, error) {
-				return "", apperror.ErrInvalidCredentials
+			mockLoginFn: func(username, password string) (*model.TokenPair, error) {
+				return nil, apperror.ErrInvalidCredentials
 			},
 			wantCode: http.StatusUnauthorized,
 		},

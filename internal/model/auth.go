@@ -13,3 +13,8 @@ type Claims struct {
 	Role                 string `json:"role"`
 	jwt.RegisteredClaims        //匿名フィールド メリット：埋め込み構造体のすべてのフィールドとメソッドを自動的に引き継ぐことができる。
 }
+
+type TokenPair struct {
+	AccessToken  string
+	RefreshToken string
+}

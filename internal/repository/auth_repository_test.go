@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,5 +83,26 @@ func TestGetUserByUsername(t *testing.T) {
 
 		_, err := repo.GetUserByUsername("admin")
 		assert.Error(t, err)
+	})
+}
+
+func TestSaveRefreshToken(t *testing.T) {
+	repo := NewAuthRepository(testDB)
+	t.Run("success", func(t *testing.T) {
+		resetTable(t)
+		defer resetTable(t)
+
+		expiresAT := time.Now().Add(24 * time.Hour)
+		err := repo.SaveRefreshToken(100, "token", expiresAT)
+		require.NoError(t, err)
+
+		var userID int64
+		var token string
+		selectSQL := `SELECT user_id, token FROM refresh_tokens WHERE id = 1`
+		err = testDB.QueryRow(selectSQL).Scan(&userID, &token)
+		require.NoError(t, err)
+
+		assert.Equal(t, int64(100), userID)
+		assert.Equal(t, "token", token)
 	})
 }

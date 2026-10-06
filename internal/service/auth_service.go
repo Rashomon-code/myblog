@@ -1,8 +1,11 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/Rashomon-code/myblog/internal/apperror"
@@ -13,6 +16,7 @@ import (
 type AuthRepositoryInterface interface {
 	CreateUserWithProfile(username, passwordHash string) error
 	GetUserByUsername(username string) (*model.User, error)
+	SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error
 }
 
 type AuthService struct {
@@ -60,20 +64,45 @@ func (s *AuthService) Register(username, password string) error {
 	return err
 }
 
-func (s *AuthService) Login(username, password string) (string, error) {
+func (s *AuthService) Login(username, password string) (*model.TokenPair, error) {
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {
-		return "", apperror.ErrInvalidCredentials
+		return nil, apperror.ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", apperror.ErrInvalidCredentials
+		return nil, apperror.ErrInvalidCredentials
 	}
 
-	token, err := s.jwt.GenerateToken(username, user.ID, user.Role)
+	accessToken, err := s.jwt.GenerateToken(username, user.ID, user.Role)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return token, nil
+
+	refreshToken, err := generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	err = s.repo.SaveRefreshToken(user.ID, refreshToken, expiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func generateRefreshToken() (string, error) {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to create refresh token: %w", err)
+	}
+
+	return hex.EncodeToString(bytes), nil
 }

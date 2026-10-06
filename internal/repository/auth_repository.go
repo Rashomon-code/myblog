@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -78,4 +79,17 @@ func (r *AuthRepository) GetUserByUsername(username string) (*model.User, error)
 	}
 
 	return &user, nil
+}
+
+func (r *AuthRepository) SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error {
+	insertSQL := `
+		INSERT INTO refresh_tokens (user_id, token, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := r.db.Exec(insertSQL, userID, refreshToken, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to insert refresh token: %w", err)
+	}
+
+	return nil
 }

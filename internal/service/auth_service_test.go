@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
@@ -14,6 +15,7 @@ type mockAuthRepository struct {
 
 	createUserFn func(username, passwordHash string) error
 	getUserFn    func(username string) (*model.User, error)
+	saveTokenFn  func(userID int64, refreshToken string, expiresAt time.Time) error
 }
 
 func (r *mockAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
@@ -22,6 +24,10 @@ func (r *mockAuthRepository) CreateUserWithProfile(username, passwordHash string
 
 func (r *mockAuthRepository) GetUserByUsername(username string) (*model.User, error) {
 	return r.getUserFn(username)
+}
+
+func (r *mockAuthRepository) SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error {
+	return r.saveTokenFn(userID, refreshToken, expiresAt)
 }
 
 func TestRegister(t *testing.T) {
@@ -84,11 +90,12 @@ func TestRegister(t *testing.T) {
 
 func TestLogin(t *testing.T) {
 	tests := []struct {
-		name          string
-		username      string
-		password      string
-		mockGetUserfn func(username string) (*model.User, error)
-		wantErr       error
+		name            string
+		username        string
+		password        string
+		mockGetUserfn   func(username string) (*model.User, error)
+		mockSaveTokenFn func(userID int64, refreshToken string, expiresAt time.Time) error
+		wantErr         error
 	}{
 		{
 			name:     "success",
@@ -105,6 +112,12 @@ func TestLogin(t *testing.T) {
 					PasswordHash: string(hash),
 					Role:         "admin",
 				}, nil
+			},
+			mockSaveTokenFn: func(userID int64, refreshToken string, expiresAt time.Time) error {
+				if userID != 100 {
+					return errors.New("failed to save token")
+				}
+				return nil
 			},
 			wantErr: nil,
 		},
@@ -138,7 +151,8 @@ func TestLogin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &mockAuthRepository{
-				getUserFn: tt.mockGetUserfn,
+				getUserFn:   tt.mockGetUserfn,
+				saveTokenFn: tt.mockSaveTokenFn,
 			}
 			jwtService := NewJWTService("test")
 			mockS := NewAuthService(r, jwtService)
