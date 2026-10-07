@@ -20,4 +20,7 @@ var (
 
 	ErrInvalidInput = errors.New("invalid input parameters")
 	ErrUnauthorized = errors.New("unauthorized")
+
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
+	ErrRefreshTokenExpired = errors.New("refresh token has been expired")
 )

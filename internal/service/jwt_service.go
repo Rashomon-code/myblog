@@ -16,11 +16,10 @@ func NewJWTService(secret string) *JWTService {
 	return &JWTService{Secret: secret}
 }
 
-func (j *JWTService) GenerateToken(username string, userID int64, role string) (string, error) {
+func (j *JWTService) GenerateToken(userID int64, role string) (string, error) {
 	claims := model.Claims{
-		UserID:   userID,
-		Username: username,
-		Role:     role,
+		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
@@ -35,7 +34,7 @@ func (j *JWTService) GenerateToken(username string, userID int64, role string) (
 		[]byte(j.Secret),
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
 	return tokenString, nil

@@ -52,6 +52,7 @@ func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, m
 		{
 			auth.POST("/register", authHandle.Register)
 			auth.POST("/login", authHandle.Login)
+			auth.POST("/refresh", authHandle.Refresh)
 		}
 
 		opt := api.Group("/opt")

@@ -93,3 +93,52 @@ func (r *AuthRepository) SaveRefreshToken(userID int64, refreshToken string, exp
 
 	return nil
 }
+
+func (r *AuthRepository) FindRefreshToken(token string) (*model.RefreshToken, error) {
+	var refreshToken model.RefreshToken
+
+	err := r.db.QueryRow(`
+		SELECT id, user_id, token, revoked, expires_at
+		FROM refresh_tokens
+		WHERE token = $1
+	`, token).Scan(
+		&refreshToken.ID,
+		&refreshToken.UserID,
+		&refreshToken.Token,
+		&refreshToken.Revoked,
+		&refreshToken.ExpiresAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query token: %w", err)
+	}
+
+	return &refreshToken, nil
+}
+
+func (r *AuthRepository) GetRoleByUserID(userID int64) (string, error) {
+	var role string
+
+	err := r.db.QueryRow(`
+		SELECT role
+		FROM users
+		WHERE id = $1
+	`, userID).Scan(&role)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to query role by user id: %w", err)
+	}
+	return role, nil
+}
+
+func (r *AuthRepository) UseRefreshToken(tokenID int) error {
+	_, err := r.db.Exec(`
+		UPDATE refresh_tokens
+		SET revoked = true
+		WHERE id = $1
+	`, tokenID)
+	if err != nil {
+		return fmt.Errorf("failed to update revoked: %w", err)
+	}
+	return nil
+}

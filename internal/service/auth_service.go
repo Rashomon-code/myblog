@@ -17,6 +17,9 @@ type AuthRepositoryInterface interface {
 	CreateUserWithProfile(username, passwordHash string) error
 	GetUserByUsername(username string) (*model.User, error)
 	SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error
+	FindRefreshToken(token string) (*model.RefreshToken, error)
+	GetRoleByUserID(userID int64) (string, error)
+	UseRefreshToken(tokenID int) error
 }
 
 type AuthService struct {
@@ -75,17 +78,16 @@ func (s *AuthService) Login(username, password string) (*model.TokenPair, error)
 		return nil, apperror.ErrInvalidCredentials
 	}
 
-	accessToken, err := s.jwt.GenerateToken(username, user.ID, user.Role)
+	accessToken, err := s.jwt.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := generateRefreshToken()
+	refreshToken, expiresAt, err := generateRefreshToken()
 	if err != nil {
 		return nil, err
 	}
 
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	err = s.repo.SaveRefreshToken(user.ID, refreshToken, expiresAt)
 	if err != nil {
 		return nil, err
@@ -97,12 +99,56 @@ func (s *AuthService) Login(username, password string) (*model.TokenPair, error)
 	}, nil
 }
 
-func generateRefreshToken() (string, error) {
+func (s *AuthService) Refresh(refreshToken string) (*model.TokenPair, error) {
+	token, err := s.repo.FindRefreshToken(refreshToken)
+	if err != nil {
+		return nil, apperror.ErrInvalidRefreshToken
+	}
+
+	if token.ExpiresAt.Before(time.Now()) {
+		return nil, apperror.ErrRefreshTokenExpired
+	}
+
+	if token.Revoked == true {
+		return nil, apperror.ErrRefreshTokenExpired
+	}
+	err = s.repo.UseRefreshToken(token.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	role, err := s.repo.GetRoleByUserID(token.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	assessToken, err := s.jwt.GenerateToken(token.UserID, role)
+	if err != nil {
+		return nil, err
+	}
+
+	newRefreshToken, expiresAt, err := generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.repo.SaveRefreshToken(token.UserID, newRefreshToken, expiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.TokenPair{
+		AccessToken:  assessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+func generateRefreshToken() (string, time.Time, error) {
 	bytes := make([]byte, 32)
 	_, err := rand.Read(bytes)
 	if err != nil {
-		return "", fmt.Errorf("failed to create refresh token: %w", err)
+		return "", time.Now(), fmt.Errorf("failed to create refresh token: %w", err)
 	}
 
-	return hex.EncodeToString(bytes), nil
+	return hex.EncodeToString(bytes), time.Now().Add(7 * 24 * time.Hour), nil
 }

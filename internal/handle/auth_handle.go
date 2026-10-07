@@ -19,6 +19,7 @@ func NewAuthHandle(s AuthService) *AuthHandle {
 type AuthService interface {
 	Register(username, password string) error
 	Login(username, password string) (*model.TokenPair, error)
+	Refresh(refreshToken string) (*model.TokenPair, error)
 }
 
 func (a *AuthHandle) Register(c *gin.Context) {
@@ -53,4 +54,16 @@ func (a *AuthHandle) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "login successfully", "token": token})
+}
+
+func (a *AuthHandle) Refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		RespondWithError(c, err)
+		return
+	}
+
+	tokenPair, err := a.authService.Refresh(refreshToken)
+
+	c.JSON(http.StatusOK, gin.H{"token": tokenPair.AccessToken})
 }
