@@ -104,7 +104,10 @@ func TestLogin(t *testing.T) {
 			name:    "success",
 			reqBody: `{"username": "testname", "password": "123456"}`,
 			mockLoginFn: func(username, password string) (*model.TokenPair, error) {
-				return nil, nil
+				return &model.TokenPair{
+					AccessToken:  "test-access-token",
+					RefreshToken: "test-refresh-token",
+				}, nil
 			},
 			wantCode: http.StatusOK,
 		},

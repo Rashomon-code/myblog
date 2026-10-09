@@ -2,7 +2,9 @@ package service
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +22,7 @@ type AuthRepositoryInterface interface {
 	FindRefreshToken(token string) (*model.RefreshToken, error)
 	GetRoleByUserID(userID int64) (string, error)
 	UseRefreshToken(tokenID int) error
+	RotateRefreshToken(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error
 }
 
 type AuthService struct {
@@ -102,19 +105,18 @@ func (s *AuthService) Login(username, password string) (*model.TokenPair, error)
 func (s *AuthService) Refresh(refreshToken string) (*model.TokenPair, error) {
 	token, err := s.repo.FindRefreshToken(refreshToken)
 	if err != nil {
-		return nil, apperror.ErrInvalidRefreshToken
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperror.ErrInvalidRefreshToken
+		}
+		return nil, err
 	}
 
 	if token.ExpiresAt.Before(time.Now()) {
 		return nil, apperror.ErrRefreshTokenExpired
 	}
 
-	if token.Revoked == true {
-		return nil, apperror.ErrRefreshTokenExpired
-	}
-	err = s.repo.UseRefreshToken(token.ID)
-	if err != nil {
-		return nil, err
+	if token.Revoked {
+		return nil, apperror.ErrRefreshTokenRevoked
 	}
 
 	role, err := s.repo.GetRoleByUserID(token.UserID)
@@ -132,7 +134,7 @@ func (s *AuthService) Refresh(refreshToken string) (*model.TokenPair, error) {
 		return nil, err
 	}
 
-	err = s.repo.SaveRefreshToken(token.UserID, newRefreshToken, expiresAt)
+	err = s.repo.RotateRefreshToken(token.ID, token.UserID, newRefreshToken, expiresAt)
 	if err != nil {
 		return nil, err
 	}

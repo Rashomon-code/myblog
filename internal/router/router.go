@@ -9,6 +9,8 @@ import (
 func SetupRouter(authHandle *handle.AuthHandle, postHandle *handle.PostHandle, mw *middleware.Middleware, userHandle *handle.UserHandle) *gin.Engine {
 	r := gin.Default()
 
+	r.Static("/static", "./static")
+
 	r.GET("/", func(ctx *gin.Context) {
 		ctx.File("templates/index.html")
 	})

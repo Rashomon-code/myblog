@@ -142,3 +142,27 @@ func (r *AuthRepository) UseRefreshToken(tokenID int) error {
 	}
 	return nil
 }
+
+func (r *AuthRepository) RotateRefreshToken(oldTokenID int, userID int64, refreshToken string, expiresAt time.Time) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to created transaction: %w", err)
+	}
+
+	if _, err := tx.Exec(`
+		UPDATE refresh_tokens
+		SET revoked = true
+		WHERE id = $1	
+	`, oldTokenID); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update revoked: %w", err)
+	}
+
+	if _, err := tx.Exec(`
+		INSERT INTO refresh_tokens (user_id, token, expires_at)
+		VALUES ($1, $2, $3)
+	`, userID, refreshToken, expiresAt); err != nil {
+		return fmt.Errorf("failed to insert refresh token: %w", err)
+	}
+	return tx.Commit()
+}

@@ -53,7 +53,8 @@ func (a *AuthHandle) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "login successfully", "token": token})
+	c.SetCookie("refresh_token", token.RefreshToken, 7*24*3600, "/api/auth/refresh", "", false, true)
+	c.JSON(http.StatusOK, gin.H{"message": "login successfully", "token": token.AccessToken})
 }
 
 func (a *AuthHandle) Refresh(c *gin.Context) {
@@ -63,7 +64,8 @@ func (a *AuthHandle) Refresh(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := a.authService.Refresh(refreshToken)
+	token, err := a.authService.Refresh(refreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenPair.AccessToken})
+	c.SetCookie("refresh_token", token.RefreshToken, 7*24*3600, "/api/auth/refresh", "", false, true)
+	c.JSON(http.StatusOK, gin.H{"token": token.AccessToken})
 }

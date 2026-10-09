@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>My Blog</title>
+    <script src="/static/js/auth.js"></script>
 
     <style>
         body {
@@ -85,11 +86,7 @@ function goAdmin(){ location.href = "/admin/users"; }
 
 async function goMypage() {
     try {
-        const response = await fetch("/api/me", {
-            headers: {
-                "Authorization": "Bearer " + token
-            }
-        });
+        const response = await apiFetch("/api/me");
         if(!response.ok) {
             throw new Error("ユーザー情報が取得できませんでした");
         }
