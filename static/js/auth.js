@@ -25,8 +25,8 @@ async function apiFetch(url, options = {}) {
     console.log("headers:", headers);
 
     let response = await fetch(url, {
-            ...options,
-            headers: headers
+        ...options,
+        headers: headers
     });
 
     if (response.status !== 401) {
@@ -39,15 +39,15 @@ async function apiFetch(url, options = {}) {
     }
 
     token = localStorage.getItem("token");
-    if (token){
+    if (token) {
         headers["Authorization"] = `Bearer ${token}`
-    }else{
+    } else {
         delete headers["Authorization"];
     }
 
     response = await fetch(url, {
-            ...options,
-            headers: headers
+        ...options,
+        headers: headers
     });
 
     return response;
