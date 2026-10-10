@@ -124,7 +124,7 @@ func (s *AuthService) Refresh(refreshToken string) (*model.TokenPair, error) {
 		return nil, err
 	}
 
-	assessToken, err := s.jwt.GenerateToken(token.UserID, role)
+	accessToken, err := s.jwt.GenerateToken(token.UserID, role)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (s *AuthService) Refresh(refreshToken string) (*model.TokenPair, error) {
 	}
 
 	return &model.TokenPair{
-		AccessToken:  assessToken,
+		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
 }

@@ -148,21 +148,35 @@ func (r *AuthRepository) RotateRefreshToken(oldTokenID int, userID int64, refres
 	if err != nil {
 		return fmt.Errorf("failed to created transaction: %w", err)
 	}
+	defer tx.Rollback()
 
-	if _, err := tx.Exec(`
+	result, err := tx.Exec(`
 		UPDATE refresh_tokens
 		SET revoked = true
-		WHERE id = $1	
-	`, oldTokenID); err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to update revoked: %w", err)
+		WHERE id = $1 AND user_id = $2 AND revoked = FALSE
+	`, oldTokenID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to revoke refresh token: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to revoke refresh token: %w", err)
+	}
+	if rows != 1 {
+		return apperror.ErrRefreshTokenRevoked
 	}
 
 	if _, err := tx.Exec(`
 		INSERT INTO refresh_tokens (user_id, token, expires_at)
 		VALUES ($1, $2, $3)
 	`, userID, refreshToken, expiresAt); err != nil {
-		return fmt.Errorf("failed to insert refresh token: %w", err)
+		return fmt.Errorf("failed to create refresh token: %w", err)
 	}
-	return tx.Commit()
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit refresh token: %w", err)
+	}
+
+	return nil
 }

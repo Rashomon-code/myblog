@@ -21,7 +21,7 @@ func (j *JWTService) GenerateToken(userID int64, role string) (string, error) {
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 		},
 	}
 
