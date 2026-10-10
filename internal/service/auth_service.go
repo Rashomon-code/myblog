@@ -21,7 +21,6 @@ type AuthRepositoryInterface interface {
 	SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error
 	FindRefreshToken(token string) (*model.RefreshToken, error)
 	GetRoleByUserID(userID int64) (string, error)
-	UseRefreshToken(tokenID int) error
 	RotateRefreshToken(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error
 }
 

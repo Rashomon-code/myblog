@@ -1,21 +1,27 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/Rashomon-code/myblog/internal/apperror"
 	"github.com/Rashomon-code/myblog/internal/model"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type mockAuthRepository struct {
 	AuthRepositoryInterface
 
-	createUserFn func(username, passwordHash string) error
-	getUserFn    func(username string) (*model.User, error)
-	saveTokenFn  func(userID int64, refreshToken string, expiresAt time.Time) error
+	createUserFn         func(username, passwordHash string) error
+	getUserFn            func(username string) (*model.User, error)
+	saveTokenFn          func(userID int64, refreshToken string, expiresAt time.Time) error
+	findTokenFn          func(token string) (*model.RefreshToken, error)
+	getRoleFn            func(userID int64) (string, error)
+	rotateRefreshTokenFn func(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error
 }
 
 func (r *mockAuthRepository) CreateUserWithProfile(username, passwordHash string) error {
@@ -28,6 +34,18 @@ func (r *mockAuthRepository) GetUserByUsername(username string) (*model.User, er
 
 func (r *mockAuthRepository) SaveRefreshToken(userID int64, refreshToken string, expiresAt time.Time) error {
 	return r.saveTokenFn(userID, refreshToken, expiresAt)
+}
+
+func (r *mockAuthRepository) FindRefreshToken(token string) (*model.RefreshToken, error) {
+	return r.findTokenFn(token)
+}
+
+func (r *mockAuthRepository) GetRoleByUserID(userID int64) (string, error) {
+	return r.getRoleFn(userID)
+}
+
+func (r *mockAuthRepository) RotateRefreshToken(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error {
+	return r.rotateRefreshTokenFn(oldTokenID, userID, refreshToken, expiredAt)
 }
 
 func TestRegister(t *testing.T) {
@@ -160,6 +178,122 @@ func TestLogin(t *testing.T) {
 			_, err := mockS.Login(tt.username, tt.password)
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("expected error %v, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+func TestRefresh(t *testing.T) {
+	tests := []struct {
+		name                 string
+		oldRefreshToken      string
+		findTokenFn          func(token string) (*model.RefreshToken, error)
+		getRoleFn            func(userID int64) (string, error)
+		rotateRefreshTokenFn func(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error
+		wantErr              error
+	}{
+		{
+			name:            "success",
+			oldRefreshToken: "old refresh token",
+			findTokenFn: func(token string) (*model.RefreshToken, error) {
+				if token != "old refresh token" {
+					return nil, errors.New("failed to find refresh token")
+				}
+				return &model.RefreshToken{
+					ID:        1,
+					UserID:    100,
+					Token:     "test",
+					Revoked:   false,
+					ExpiresAt: time.Now().Add(1 * time.Minute),
+				}, nil
+			},
+			getRoleFn: func(userID int64) (string, error) {
+				return "user", nil
+			},
+			rotateRefreshTokenFn: func(oldTokenID int, userID int64, refreshToken string, expiredAt time.Time) error {
+				require.Equal(t, 1, oldTokenID)
+				require.Equal(t, int64(100), userID)
+				require.NotEmpty(t, refreshToken)
+				require.True(t, expiredAt.After(time.Now()))
+				return nil
+			},
+			wantErr: nil,
+		},
+		{
+			name:            "error: token not found",
+			oldRefreshToken: "non token",
+			findTokenFn: func(token string) (*model.RefreshToken, error) {
+				return nil, sql.ErrNoRows
+			},
+			wantErr: apperror.ErrInvalidRefreshToken,
+		},
+		{
+			name:            "error: token expired",
+			oldRefreshToken: "expired token",
+			findTokenFn: func(token string) (*model.RefreshToken, error) {
+				return &model.RefreshToken{
+					ID:        1,
+					UserID:    100,
+					Token:     "test",
+					Revoked:   false,
+					ExpiresAt: time.Now().Add(-1 * time.Minute),
+				}, nil
+			},
+			wantErr: apperror.ErrRefreshTokenExpired,
+		},
+		{
+			name:            "error: token revoked",
+			oldRefreshToken: "revoked token",
+			findTokenFn: func(token string) (*model.RefreshToken, error) {
+				return &model.RefreshToken{
+					ID:        1,
+					UserID:    100,
+					Token:     "test",
+					Revoked:   true,
+					ExpiresAt: time.Now().Add(1 * time.Minute),
+				}, nil
+			},
+			wantErr: apperror.ErrRefreshTokenRevoked,
+		},
+		{
+			name:            "error: get role failed",
+			oldRefreshToken: "valid token",
+			findTokenFn: func(token string) (*model.RefreshToken, error) {
+				return &model.RefreshToken{
+					ID:        1,
+					UserID:    100,
+					Token:     "test",
+					Revoked:   false,
+					ExpiresAt: time.Now().Add(1 * time.Minute),
+				}, nil
+			},
+			getRoleFn: func(userID int64) (string, error) {
+				return "", errors.New("failed to get role")
+			},
+			wantErr: errors.New("failed to get role"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &mockAuthRepository{
+				findTokenFn:          tt.findTokenFn,
+				getRoleFn:            tt.getRoleFn,
+				rotateRefreshTokenFn: tt.rotateRefreshTokenFn,
+			}
+			jwtService := NewJWTService("test")
+			mockS := NewAuthService(r, jwtService)
+
+			tokenPair, err := mockS.Refresh(tt.oldRefreshToken)
+
+			if tt.wantErr != nil {
+				assert.Nil(t, tokenPair)
+				assert.True(t, errors.Is(err, tt.wantErr) || err.Error() == tt.wantErr.Error())
+			} else {
+				claims, err := mockS.jwt.ParseToken(tokenPair.AccessToken)
+				require.NoError(t, err)
+				assert.Equal(t, int64(100), claims.UserID)
+				assert.Equal(t, "user", claims.Role)
 			}
 		})
 	}
